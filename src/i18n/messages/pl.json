@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "description": "Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego."
+  },
+  "home": {
+    "tagline": "Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego.",
+    "status": "Wersja w budowie",
+    "features": {
+      "title": "Co będzie w środku",
+      "markets": "Akcje i ETF-y z GPW i rynków zagranicznych, wyceniane w złotych",
+      "bonds": "Detaliczne obligacje skarbowe z dzienną wyceną",
+      "accounts": "Rachunki IKE, IKZE i OKI obok zwykłych",
+      "taxes": "Zestawienie do PIT-38"
+    },
+    "selfHosted": "Aplikacja działa na Twoim serwerze. Twoje dane nigdzie nie są wysyłane.",
+    "sourceCode": "Kod źródłowy"
+  }
+}

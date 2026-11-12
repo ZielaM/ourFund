@@ -1,0 +1,89 @@
+# Weekly, grouped updates: a handful of pull requests on Monday instead of one per package.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 6
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # Packages that must move together, including across major versions.
+      next-react:
+        patterns:
+          - next
+          - "@next/*"
+          - eslint-config-next
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
+      prisma:
+        patterns:
+          - prisma
+          - "@prisma/*"
+      # Everything else: one pull request for runtime packages, one for tooling.
+      # Major versions are left out on purpose and arrive as separate pull requests.
+      production:
+        dependency-type: production
+        update-types: [minor, patch]
+      development:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Type definitions follow the Node.js version in .nvmrc, not the newest release.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    commit-message:
+      prefix: chore
+    groups:
+      docker:
+        patterns: ["*"]
+    ignore:
+      # Stay on the Node.js LTS line from .nvmrc; changing it is a deliberate decision.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    commit-message:
+      prefix: chore
+    groups:
+      docker-compose:
+        patterns: ["*"]
+    ignore:
+      # A new PostgreSQL major needs a data migration (pg_upgrade), never an automatic bump.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
