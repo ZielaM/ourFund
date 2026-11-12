@@ -5,7 +5,31 @@ const validUrl = "postgresql://user:secret@localhost:5432/ourfund?schema=public"
 
 describe("parseEnv", () => {
   it("returns the validated configuration", () => {
-    expect(parseEnv({ DATABASE_URL: validUrl })).toEqual({ DATABASE_URL: validUrl });
+    expect(parseEnv({ DATABASE_URL: validUrl })).toEqual({
+      DATABASE_URL: validUrl,
+      ALLOW_REGISTRATION: false,
+    });
+  });
+
+  it('turns open registration on only for the exact value "true"', () => {
+    expect(parseEnv({ DATABASE_URL: validUrl, ALLOW_REGISTRATION: "true" })).toMatchObject({
+      ALLOW_REGISTRATION: true,
+    });
+    expect(parseEnv({ DATABASE_URL: validUrl, ALLOW_REGISTRATION: "false" })).toMatchObject({
+      ALLOW_REGISTRATION: false,
+    });
+  });
+
+  it("rejects an unclear registration setting instead of guessing", () => {
+    expect(() => parseEnv({ DATABASE_URL: validUrl, ALLOW_REGISTRATION: "yes" })).toThrowError(
+      /ALLOW_REGISTRATION must be "true" or "false"/,
+    );
+  });
+
+  it("lists every problem at once", () => {
+    expect(() => parseEnv({ ALLOW_REGISTRATION: "yes" })).toThrowError(
+      /DATABASE_URL is required[\s\S]*ALLOW_REGISTRATION/,
+    );
   });
 
   it("accepts the short postgres:// scheme", () => {

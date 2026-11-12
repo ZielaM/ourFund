@@ -2,6 +2,8 @@
 #
 # Optional settings (put them in a .env file next to this one):
 #   APP_PORT           port published on the host (default 3000)
+#   ALLOW_REGISTRATION "true" lets anyone who can reach the app create an account
+#                      (default "false": the administrator creates accounts)
 #   POSTGRES_PASSWORD  database password (default "ourfund"; letters and digits only,
 #                      because it becomes part of a connection URL)
 name: ourfund
@@ -31,6 +33,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://ourfund:${POSTGRES_PASSWORD:-ourfund}@db:5432/ourfund?schema=public
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
     ports:
       - "${APP_PORT:-3000}:3000"
 

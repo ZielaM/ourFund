@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { APP_NAME } from "@/config/app";
+import "@fontsource-variable/ibm-plex-sans";
+import "@fontsource-variable/brygada-1918";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("meta");
 
   return {
-    title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
+    title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
     description: t("description"),
   };
 }

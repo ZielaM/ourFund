@@ -33,3 +33,6 @@ playwright/.cache/
 
 # prisma
 src/generated/
+
+# playwright signed-in browser state
+e2e/.auth/

@@ -16,7 +16,7 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 | Unit + component + integration tests with coverage | `pnpm test` (integration needs `pnpm db:up`)                      |
 | Tests without a database                           | `pnpm test:unit`                                                  |
 | End-to-end tests                                   | `pnpm e2e` (builds the app, needs `pnpm db:up`)                   |
-| New migration after editing `prisma/schema.prisma` | `pnpm db:migrate --name <name>`                                   |
+| New migration after editing `prisma/schema.prisma` | `pnpm db:migrate --name <name> && pnpm db:generate`               |
 | Whole stack as users run it                        | `docker compose up -d --build`                                    |
 
 ## Architecture
@@ -45,5 +45,15 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 - The app name lives only in `src/config/app.ts`.
 - Do not copy code, assets, texts or screen layouts from myFund, and never fetch data from it.
 - Next.js runs with `cacheComponents: true`: request-time data must be read inside `<Suspense>`
-  or after `await connection()`; read the bundled docs in `node_modules/next/dist/docs/` first.
+  (a `loading.tsx` counts) and after a request-time API; read the bundled docs in
+  `node_modules/next/dist/docs/` first. Pages are also rendered at build time without a
+  database, so the first thing a page does must be `requireUser()` / `getCurrentUser()` /
+  `await connection()` — before `getDb()` or `getEnv()`.
+- **Authorization lives on the server.** Every page and every Server Action calls
+  `requireUser()` or `requireAdmin()` (`src/server/auth/current-user.ts`) itself; `src/proxy.ts`
+  is only a convenience redirect. Services that act on behalf of a user take the acting user
+  as an argument and check it.
+- Server Actions return `FormState` (`src/lib/form-state.ts`) with error/notice codes that the
+  UI translates (`errors.*`, `notices.*` in the messages file). A page streamed behind
+  `<Suspense>` answers 200 even when it renders "not found", so e2e tests assert on the UI.
 - Prisma stays on the stable 7.x line (npm's `latest` tag currently points at an 8.0 release candidate).

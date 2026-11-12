@@ -4,6 +4,11 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string({ error: "DATABASE_URL is required" })
     .regex(/^postgres(ql)?:\/\//, "DATABASE_URL must be a PostgreSQL connection string"),
+  /** Lets anyone who can reach the app create an account. Off unless set to "true". */
+  ALLOW_REGISTRATION: z
+    .enum(["true", "false"], { error: 'ALLOW_REGISTRATION must be "true" or "false"' })
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type Env = z.infer<typeof envSchema>;

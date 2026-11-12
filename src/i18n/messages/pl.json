@@ -2,17 +2,151 @@
   "meta": {
     "description": "Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego."
   },
-  "home": {
-    "tagline": "Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego.",
-    "status": "Wersja w budowie",
-    "features": {
-      "title": "Co będzie w środku",
-      "markets": "Akcje i ETF-y z GPW i rynków zagranicznych, wyceniane w złotych",
-      "bonds": "Detaliczne obligacje skarbowe z dzienną wyceną",
-      "accounts": "Rachunki IKE, IKZE i OKI obok zwykłych",
-      "taxes": "Zestawienie do PIT-38"
+  "common": {
+    "loading": "Wczytywanie…"
+  },
+  "nav": {
+    "main": "Nawigacja główna",
+    "dashboard": "Pulpit",
+    "users": "Użytkownicy",
+    "settings": "Ustawienia",
+    "signOut": "Wyloguj się",
+    "signedInAs": "Zalogowano jako {username}"
+  },
+  "auth": {
+    "tagline": "Tracker portfela inwestycyjnego, który działa na Twoim serwerze.",
+    "fields": {
+      "username": "Nazwa użytkownika",
+      "usernameHint": "Od 3 do 32 znaków: litery bez polskich znaków, cyfry, kropka, myślnik, podkreślnik.",
+      "password": "Hasło",
+      "newPassword": "Nowe hasło",
+      "passwordHint": "Co najmniej {min} znaków.",
+      "passwordConfirmation": "Powtórz hasło",
+      "currentPassword": "Obecne hasło"
     },
-    "selfHosted": "Aplikacja działa na Twoim serwerze. Twoje dane nigdzie nie są wysyłane.",
-    "sourceCode": "Kod źródłowy"
+    "signIn": {
+      "title": "Zaloguj się",
+      "submit": "Zaloguj się",
+      "noAccount": "Nie masz konta?",
+      "register": "Załóż konto"
+    },
+    "setup": {
+      "title": "Pierwsze uruchomienie",
+      "intro": "Ta instancja nie ma jeszcze żadnego konta. Utwórz konto administratora — kolejne osoby dodasz później w zakładce Użytkownicy.",
+      "submit": "Utwórz konto administratora"
+    },
+    "register": {
+      "title": "Załóż konto",
+      "submit": "Załóż konto",
+      "haveAccount": "Masz już konto?",
+      "signIn": "Zaloguj się"
+    }
+  },
+  "dashboard": {
+    "title": "Pulpit",
+    "empty": {
+      "title": "Nie masz jeszcze żadnego portfela",
+      "body": "Portfele i transakcje pojawią się w kolejnej wersji aplikacji. Na razie działają konta użytkowników."
+    }
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "account": {
+      "title": "Konto",
+      "username": "Nazwa użytkownika",
+      "role": "Rola"
+    },
+    "password": {
+      "title": "Zmiana hasła",
+      "intro": "Po zmianie hasła nastąpi wylogowanie na pozostałych urządzeniach.",
+      "submit": "Zmień hasło"
+    }
+  },
+  "roles": {
+    "ADMIN": "Administrator",
+    "USER": "Użytkownik"
+  },
+  "users": {
+    "title": "Użytkownicy",
+    "intro": "Konta są lokalne dla tej instancji. Nie ma odzyskiwania hasła e-mailem — nowe hasło nadaje administrator.",
+    "table": {
+      "caption": "Lista kont",
+      "username": "Nazwa użytkownika",
+      "role": "Rola",
+      "status": "Stan",
+      "createdAt": "Utworzono",
+      "manage": "Zarządzaj",
+      "manageUser": "Zarządzaj kontem {username}",
+      "you": "to Ty"
+    },
+    "status": {
+      "active": "Aktywne",
+      "disabled": "Zablokowane"
+    },
+    "create": {
+      "title": "Nowe konto",
+      "role": "Rola",
+      "submit": "Utwórz konto"
+    },
+    "detail": {
+      "back": "Wszyscy użytkownicy",
+      "ownAccount": "To Twoje konto. Hasło zmienisz w ustawieniach.",
+      "goToSettings": "Przejdź do ustawień",
+      "access": {
+        "title": "Dostęp",
+        "activeBody": "Konto jest aktywne. Zablokowanie wyloguje tę osobę ze wszystkich urządzeń i uniemożliwi logowanie. Dane pozostaną nienaruszone.",
+        "disabledBody": "Konto jest zablokowane. Ta osoba nie może się zalogować.",
+        "disable": "Zablokuj konto",
+        "enable": "Odblokuj konto"
+      },
+      "password": {
+        "title": "Nadanie hasła",
+        "intro": "Nadaj hasło i przekaż je tej osobie. Zostanie ona wylogowana ze wszystkich urządzeń.",
+        "submit": "Ustaw hasło"
+      }
+    }
+  },
+  "notices": {
+    "password": {
+      "changed": "Hasło zostało zmienione.",
+      "set": "Nowe hasło zostało ustawione."
+    },
+    "users": {
+      "created": "Konto {username} zostało utworzone.",
+      "disabled": "Konto zostało zablokowane.",
+      "enabled": "Konto zostało odblokowane."
+    }
+  },
+  "errors": {
+    "required": "To pole jest wymagane.",
+    "unknown": "Coś poszło nie tak. Spróbuj ponownie.",
+    "username": {
+      "invalid": "Użyj od 3 do 32 znaków: liter bez polskich znaków, cyfr, kropki, myślnika lub podkreślnika. Pierwszy znak to litera lub cyfra.",
+      "taken": "Ta nazwa użytkownika jest już zajęta."
+    },
+    "password": {
+      "tooShort": "Hasło musi mieć co najmniej {min} znaków.",
+      "tooLong": "Hasło może mieć najwyżej {max} znaków."
+    },
+    "passwordConfirmation": {
+      "mismatch": "Hasła nie są takie same."
+    },
+    "auth": {
+      "invalidCredentials": "Nieprawidłowa nazwa użytkownika lub hasło.",
+      "locked": "Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za {minutes, plural, one {# minutę} few {# minuty} many {# minut} other {# minuty}}.",
+      "wrongCurrentPassword": "Obecne hasło jest nieprawidłowe."
+    },
+    "setup": {
+      "alreadyDone": "Konto administratora już istnieje. Zaloguj się."
+    },
+    "users": {
+      "notFound": "Nie ma takiego użytkownika.",
+      "ownAccount": "Własnym kontem zarządzasz w ustawieniach."
+    }
+  },
+  "notFound": {
+    "title": "Nie ma takiej strony",
+    "body": "Adres jest nieprawidłowy albo strona została przeniesiona.",
+    "back": "Wróć do pulpitu"
   }
 }

@@ -11,7 +11,55 @@ datasource db {
 model AppSetting {
   key       String   @id
   value     Json
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("app_settings")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+
+  @@map("user_role")
+}
+
+/// A local account. There is no e-mail: passwords are reset by an administrator.
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  /// Stored normalized (trimmed, lower case).
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(USER)
+  /// Set when an administrator blocks the account.
+  disabledAt   DateTime? @map("disabled_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Session {
+  /// SHA-256 of the token kept in the browser cookie; the token itself is never stored.
+  id        String   @id
+  userId    String   @map("user_id") @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Sign-in history used to slow down password guessing.
+model LoginAttempt {
+  id        BigInt   @id @default(autoincrement())
+  username  String
+  succeeded Boolean
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([username, createdAt])
+  @@map("login_attempts")
 }
