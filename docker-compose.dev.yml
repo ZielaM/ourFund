@@ -1,0 +1,24 @@
+# Development database only. The app itself runs on the host with `pnpm dev`.
+#   pnpm db:up    start
+#   pnpm db:down  stop (data is kept in a volume)
+name: ourfund-dev
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ourfund
+      POSTGRES_PASSWORD: ourfund
+      POSTGRES_DB: ourfund
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ourfund -d ourfund"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  db-data:

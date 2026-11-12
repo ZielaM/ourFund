@@ -1,0 +1,38 @@
+# Runs the whole application: `docker compose up -d --build`, then open http://localhost:3000
+#
+# Optional settings (put them in a .env file next to this one):
+#   APP_PORT           port published on the host (default 3000)
+#   POSTGRES_PASSWORD  database password (default "ourfund"; letters and digits only,
+#                      because it becomes part of a connection URL)
+name: ourfund
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ourfund
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ourfund}
+      POSTGRES_DB: ourfund
+    # The database is reachable only from the app container; no port is published.
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ourfund -d ourfund"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ourfund:${POSTGRES_PASSWORD:-ourfund}@db:5432/ourfund?schema=public
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  db-data:
