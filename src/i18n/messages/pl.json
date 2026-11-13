@@ -11,7 +11,8 @@
     "users": "Użytkownicy",
     "settings": "Ustawienia",
     "signOut": "Wyloguj się",
-    "signedInAs": "Zalogowano jako {username}"
+    "signedInAs": "Zalogowano jako {username}",
+    "instruments": "Instrumenty"
   },
   "auth": {
     "tagline": "Tracker portfela inwestycyjnego, który działa na Twoim serwerze.",
@@ -44,9 +45,21 @@
   },
   "dashboard": {
     "title": "Pulpit",
+    "portfolios": {
+      "title": "Portfele",
+      "open": "Otwórz portfel {name}",
+      "accounts": "{count, plural, =0 {brak rachunków} one {# rachunek} few {# rachunki} many {# rachunków} other {# rachunku}}",
+      "transactions": "{count, plural, =0 {brak transakcji} one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}"
+    },
     "empty": {
       "title": "Nie masz jeszcze żadnego portfela",
-      "body": "Portfele i transakcje pojawią się w kolejnej wersji aplikacji. Na razie działają konta użytkowników."
+      "body": "Portfel grupuje rachunki inwestycyjne, na przykład maklerski, IKE i IKZE. Zacznij od utworzenia pierwszego."
+    },
+    "create": {
+      "title": "Nowy portfel",
+      "name": "Nazwa portfela",
+      "nameHint": "Na przykład „Główny” albo „Emerytura”.",
+      "submit": "Utwórz portfel"
     }
   },
   "settings": {
@@ -115,6 +128,17 @@
       "created": "Konto {username} zostało utworzone.",
       "disabled": "Konto zostało zablokowane.",
       "enabled": "Konto zostało odblokowane."
+    },
+    "portfolios": {
+      "renamed": "Nazwa portfela została zmieniona."
+    },
+    "accounts": {
+      "created": "Rachunek {name} został dodany.",
+      "updated": "Rachunek został zapisany.",
+      "deleted": "Rachunek został usunięty."
+    },
+    "instruments": {
+      "created": "Instrument {symbol} został dodany."
     }
   },
   "errors": {
@@ -142,11 +166,225 @@
     "users": {
       "notFound": "Nie ma takiego użytkownika.",
       "ownAccount": "Własnym kontem zarządzasz w ustawieniach."
+    },
+    "notFound": "Nie znaleziono. Odśwież stronę i spróbuj ponownie.",
+    "confirmRequired": "Zaznacz potwierdzenie, żeby kontynuować.",
+    "name": {
+      "tooLong": "Nazwa jest za długa."
+    },
+    "number": {
+      "invalid": "Wpisz liczbę, na przykład 12,50.",
+      "positive": "Wartość musi być większa od zera.",
+      "tooPrecise": "Za dużo miejsc po przecinku.",
+      "tooLarge": "Ta wartość jest za duża."
+    },
+    "currency": {
+      "invalid": "Wybierz walutę z listy."
+    },
+    "date": {
+      "invalid": "Podaj poprawną datę.",
+      "future": "Data nie może być późniejsza niż dzisiejsza."
+    },
+    "note": {
+      "tooLong": "Notatka może mieć najwyżej 500 znaków."
+    },
+    "tax": {
+      "exceedsAmount": "Podatek nie może być wyższy niż kwota brutto."
+    },
+    "splitRatio": {
+      "noChange": "Stosunek 1 niczego nie zmienia. Podaj inną wartość."
+    },
+    "symbol": {
+      "invalid": "Symbol może mieć do 20 znaków: litery, cyfry, kropkę i myślnik."
+    },
+    "portfolios": {
+      "nameTaken": "Masz już portfel o tej nazwie."
+    },
+    "accounts": {
+      "nameTaken": "W tym portfelu jest już rachunek o tej nazwie.",
+      "hasTransactions": "Ten rachunek ma transakcje. Usuń je najpierw albo zostaw rachunek."
+    },
+    "instruments": {
+      "exists": "Instrument o tym symbolu już istnieje na tym rynku."
+    },
+    "transactions": {
+      "insufficientQuantity": "Na tym rachunku nie ma tylu sztuk w dniu transakcji. Sprawdź liczbę, datę i wcześniejsze transakcje.",
+      "accountNotFound": "Wybierz rachunek z listy.",
+      "instrumentNotFound": "Wybierz instrument z listy.",
+      "notFound": "Tej transakcji już nie ma."
     }
   },
   "notFound": {
     "title": "Nie ma takiej strony",
     "body": "Adres jest nieprawidłowy albo strona została przeniesiona.",
     "back": "Wróć do pulpitu"
+  },
+  "portfolio": {
+    "settings": "Ustawienia portfela",
+    "back": "Wróć do portfela",
+    "noAccounts": {
+      "title": "Dodaj pierwszy rachunek",
+      "body": "Transakcje zapisuje się na rachunkach. Dodaj rachunek maklerski, IKE, IKZE albo OKI, żeby zacząć.",
+      "action": "Dodaj rachunek"
+    },
+    "holdings": {
+      "title": "Pozycje",
+      "empty": "Brak otwartych pozycji. Pojawią się po dodaniu pierwszego zakupu.",
+      "caption": "Otwarte pozycje",
+      "closedTitle": "Zamknięte pozycje ({count})",
+      "closedCaption": "Zamknięte pozycje",
+      "instrument": "Instrument",
+      "quantity": "Liczba",
+      "averageCost": "Średni koszt",
+      "costBasis": "Koszt nabycia",
+      "realizedGain": "Wynik zrealizowany",
+      "income": "Dywidendy i odsetki"
+    },
+    "cash": {
+      "title": "Gotówka",
+      "caption": "Salda gotówkowe",
+      "account": "Rachunek",
+      "balance": "Saldo",
+      "negativeHint": "Ujemne saldo zwykle oznacza, że nie zapisano wpłat na rachunek."
+    },
+    "transactions": {
+      "title": "Transakcje",
+      "add": "Dodaj transakcję",
+      "empty": "Brak transakcji.",
+      "caption": "Historia transakcji",
+      "date": "Data",
+      "account": "Rachunek",
+      "type": "Typ",
+      "instrument": "Instrument",
+      "quantity": "Liczba",
+      "price": "Cena",
+      "cash": "Wpływ na gotówkę",
+      "edit": "Edytuj",
+      "editTransaction": "Edytuj transakcję: {type}, {date}"
+    },
+    "rename": {
+      "title": "Zmiana nazwy",
+      "name": "Nazwa portfela",
+      "submit": "Zapisz nazwę"
+    },
+    "accounts": {
+      "title": "Rachunki",
+      "empty": "Ten portfel nie ma jeszcze rachunków.",
+      "name": "Nazwa rachunku",
+      "nameHint": "Na przykład „XTB” albo „IKE mBank”.",
+      "type": "Typ rachunku",
+      "institution": "Instytucja",
+      "institutionHint": "Opcjonalnie: broker albo bank.",
+      "addTitle": "Nowy rachunek",
+      "add": "Dodaj rachunek",
+      "save": "Zapisz rachunek",
+      "delete": "Usuń rachunek",
+      "deleteHint": "Usunąć można tylko rachunek bez transakcji.",
+      "transactionCount": "{count, plural, =0 {brak transakcji} one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+      "edit": "Edytuj rachunek {name}"
+    },
+    "delete": {
+      "title": "Usunięcie portfela",
+      "body": "Usunięcie portfela usuwa także jego rachunki i wszystkie transakcje. Tej operacji nie można cofnąć.",
+      "confirm": "Rozumiem, że portfel „{name}” zostanie trwale usunięty razem z transakcjami",
+      "submit": "Usuń portfel"
+    }
+  },
+  "transaction": {
+    "newTitle": "Nowa transakcja",
+    "editTitle": "Edycja transakcji",
+    "fields": {
+      "account": "Rachunek",
+      "date": "Data",
+      "type": "Typ transakcji",
+      "instrument": "Instrument",
+      "noInstrument": "Bez instrumentu (odsetki od gotówki)",
+      "chooseInstrument": "Wybierz instrument",
+      "missingInstrument": "Nie ma go na liście?",
+      "addInstrument": "Dodaj instrument",
+      "quantity": "Liczba",
+      "price": "Cena za sztukę",
+      "priceIn": "Cena za sztukę ({currency})",
+      "fee": "Prowizja",
+      "feeHint": "Opcjonalnie.",
+      "settlementCurrency": "Waluta rozliczenia",
+      "settlementCurrencyHint": "Waluta, w której rachunek zapłacił lub otrzymał pieniądze.",
+      "fxRate": "Kurs przewalutowania",
+      "fxRateHint": "Ile {settlement} kosztowała 1 jednostka {instrument}.",
+      "grossAmount": "Kwota brutto",
+      "amount": "Kwota",
+      "tax": "Podatek pobrany u źródła",
+      "taxHint": "Opcjonalnie.",
+      "currency": "Waluta",
+      "splitRatio": "Stosunek podziału",
+      "splitRatioHint": "Ile nowych sztuk przypada na jedną starą: 4 dla splitu 4:1, 0,1 dla scalenia 10:1.",
+      "note": "Notatka",
+      "noteHint": "Opcjonalnie."
+    },
+    "save": "Zapisz transakcję",
+    "add": "Dodaj transakcję",
+    "cancel": "Anuluj",
+    "delete": {
+      "title": "Usunięcie transakcji",
+      "body": "Transakcja zostanie trwale usunięta.",
+      "submit": "Usuń transakcję"
+    }
+  },
+  "instruments": {
+    "title": "Instrumenty",
+    "intro": "Katalog instrumentów jest wspólny dla wszystkich użytkowników tej instancji. Notowania pojawią się w kolejnej wersji.",
+    "empty": "Katalog jest pusty. Dodaj pierwszy instrument, żeby zapisać transakcję kupna.",
+    "table": {
+      "caption": "Lista instrumentów",
+      "symbol": "Symbol",
+      "name": "Nazwa",
+      "type": "Rodzaj",
+      "market": "Rynek",
+      "currency": "Waluta"
+    },
+    "create": {
+      "title": "Nowy instrument",
+      "symbol": "Symbol",
+      "symbolHint": "Ticker z giełdy, na przykład CDR albo VWCE.",
+      "name": "Nazwa",
+      "type": "Rodzaj",
+      "market": "Rynek",
+      "currency": "Waluta notowań",
+      "submit": "Dodaj instrument"
+    }
+  },
+  "accountTypes": {
+    "STANDARD": "Zwykły",
+    "IKE": "IKE",
+    "IKZE": "IKZE",
+    "OKI": "OKI"
+  },
+  "instrumentTypes": {
+    "STOCK": "Akcja",
+    "ETF": "ETF",
+    "BOND": "Obligacja",
+    "CRYPTO": "Kryptowaluta"
+  },
+  "markets": {
+    "GPW": "GPW",
+    "NEWCONNECT": "NewConnect",
+    "CATALYST": "Catalyst",
+    "XETRA": "Xetra",
+    "LSE": "LSE (Londyn)",
+    "EURONEXT": "Euronext",
+    "NYSE": "NYSE",
+    "NASDAQ": "NASDAQ",
+    "CRYPTO": "Kryptowaluty",
+    "OTHER": "Inny"
+  },
+  "transactionTypes": {
+    "BUY": "Kupno",
+    "SELL": "Sprzedaż",
+    "DIVIDEND": "Dywidenda",
+    "INTEREST": "Odsetki",
+    "FEE": "Opłata",
+    "DEPOSIT": "Wpłata",
+    "WITHDRAWAL": "Wypłata",
+    "SPLIT": "Split"
   }
 }

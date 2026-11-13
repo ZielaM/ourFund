@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import { useId, type ComponentProps } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -12,13 +12,17 @@ type FormFieldProps = Omit<ComponentProps<"input">, "id"> & {
 };
 
 export function FormField({ name, label, hint, error, ...inputProps }: FormFieldProps) {
-  const describedBy = [hint && `${name}-hint`, error && `${name}-error`].filter(Boolean).join(" ");
+  // Several forms on one page may have a field with the same name, so ids must be unique.
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const describedBy = [hint && !error && hintId, error && errorId].filter(Boolean).join(" ");
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={name}>{label}</Label>
+      <Label htmlFor={id}>{label}</Label>
       <Input
-        id={name}
+        id={id}
         name={name}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy || undefined}
@@ -26,12 +30,12 @@ export function FormField({ name, label, hint, error, ...inputProps }: FormField
         {...inputProps}
       />
       {hint && !error ? (
-        <p id={`${name}-hint`} className="text-sm text-muted-foreground">
+        <p id={hintId} className="text-sm text-muted-foreground">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={`${name}-error`} className="text-sm text-destructive">
+        <p id={errorId} className="text-sm text-destructive">
           {error}
         </p>
       ) : null}

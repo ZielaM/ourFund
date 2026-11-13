@@ -33,8 +33,16 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 
 ## Rules
 
-- **Money and quantities are never `number`.** Use Prisma `Decimal` / `decimal.js` in code and
-  `NUMERIC` in the database.
+- **Money and quantities are never `number`.** Import `Decimal` from `@/domain/decimal`
+  (decimal.js with the project's precision), store `NUMERIC` in the database, and format for
+  display with `src/lib/format.ts`. User input is parsed with `parseDecimalInput` ("1 234,56").
+- Dates of transactions are calendar days (`"YYYY-MM-DD"`, `IsoDate`), never timestamps.
+- Holdings are never stored: `computeLedger` (`src/domain/portfolio/ledger.ts`) replays an
+  account's transactions (FIFO, per account). Any change to transactions must keep every
+  account replayable; `src/server/portfolio/transactions.ts` checks that inside a transaction.
+- A user sees only their own portfolios. Services take the acting user and filter by owner;
+  every new service needs an isolation test (user B cannot read or change user A's data).
+- Forms use `<ActionForm>` with the fields from `src/components/form/fields.tsx`.
 - **Tests come with the code.** Unit tests for all logic; `*.int.test.ts` for repositories and
   services against real PostgreSQL; Playwright for user flows. CI enforces 90% coverage for
   `src/domain` and `src/server`.
@@ -56,4 +64,6 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 - Server Actions return `FormState` (`src/lib/form-state.ts`) with error/notice codes that the
   UI translates (`errors.*`, `notices.*` in the messages file). A page streamed behind
   `<Suspense>` answers 200 even when it renders "not found", so e2e tests assert on the UI.
+- With Cache Components the previous page stays in the DOM, hidden. In Playwright use
+  `getByRole`, or `field()` from `e2e/helpers/ui.ts` instead of a bare `getByLabel`.
 - Prisma stays on the stable 7.x line (npm's `latest` tag currently points at an 8.0 release candidate).

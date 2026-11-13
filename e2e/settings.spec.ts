@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createUserAsAdmin, newVisitor, signIn } from "./helpers/accounts";
+import { field } from "./helpers/ui";
 
 test("użytkownik zmienia własne hasło", async ({ page, browser }) => {
   const account = { username: "zmieniajacy", password: "pierwsze-haslo-123" };
@@ -14,15 +15,15 @@ test("użytkownik zmienia własne hasło", async ({ page, browser }) => {
   await expect(user.getByText("Użytkownik", { exact: true })).toBeVisible();
 
   // The current password must be right.
-  await user.getByLabel("Obecne hasło").fill("nie-to-haslo");
-  await user.getByLabel("Nowe hasło", { exact: true }).fill(newPassword);
-  await user.getByLabel("Powtórz hasło").fill(newPassword);
+  await field(user, "Obecne hasło").fill("nie-to-haslo");
+  await field(user, "Nowe hasło", { exact: true }).fill(newPassword);
+  await field(user, "Powtórz hasło").fill(newPassword);
   await user.getByRole("button", { name: "Zmień hasło" }).click();
   await expect(user.getByText("Obecne hasło jest nieprawidłowe.")).toBeVisible();
 
-  await user.getByLabel("Obecne hasło").fill(account.password);
-  await user.getByLabel("Nowe hasło", { exact: true }).fill(newPassword);
-  await user.getByLabel("Powtórz hasło").fill(newPassword);
+  await field(user, "Obecne hasło").fill(account.password);
+  await field(user, "Nowe hasło", { exact: true }).fill(newPassword);
+  await field(user, "Powtórz hasło").fill(newPassword);
   await user.getByRole("button", { name: "Zmień hasło" }).click();
   await expect(user.getByText("Hasło zostało zmienione.")).toBeVisible();
 

@@ -9,12 +9,20 @@ type NavLinkProps = {
   href: string;
   /** Match only the exact path (used for the dashboard at "/"). */
   exact?: boolean;
+  /** Other sections that belong to this link, e.g. "/portfolios" for the dashboard. */
+  alsoActiveUnder?: string[];
   children: ReactNode;
 };
 
-export function NavLink({ href, exact = false, children }: NavLinkProps) {
+function isUnder(pathname: string, section: string): boolean {
+  return pathname === section || pathname.startsWith(`${section}/`);
+}
+
+export function NavLink({ href, exact = false, alsoActiveUnder = [], children }: NavLinkProps) {
   const pathname = usePathname();
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const active =
+    (exact ? pathname === href : isUnder(pathname, href)) ||
+    alsoActiveUnder.some((section) => isUnder(pathname, section));
 
   return (
     <Link

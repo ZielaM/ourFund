@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createUserAsAdmin, fillNewAccount, newVisitor, signIn } from "./helpers/accounts";
 import { admin } from "./helpers/env";
+import { field } from "./helpers/ui";
 
 test.describe("zarządzanie użytkownikami", () => {
   test("administrator widzi siebie na liście kont", async ({ page }) => {
@@ -18,7 +19,7 @@ test.describe("zarządzanie użytkownikami", () => {
     await page.getByRole("button", { name: "Utwórz konto" }).click();
 
     await expect(page.getByText("Ta nazwa użytkownika jest już zajęta.")).toBeVisible();
-    await expect(page.getByLabel("Nazwa użytkownika")).toHaveValue(admin.username);
+    await expect(field(page, "Nazwa użytkownika")).toHaveValue(admin.username);
   });
 
   test("własnego konta administrator nie blokuje ani nie resetuje", async ({ page }) => {
@@ -88,8 +89,8 @@ test.describe("zarządzanie użytkownikami", () => {
     await createUserAsAdmin(page, account);
 
     await page.getByRole("link", { name: `Zarządzaj kontem ${account.username}` }).click();
-    await page.getByLabel("Nowe hasło", { exact: true }).fill(newPassword);
-    await page.getByLabel("Powtórz hasło").fill(newPassword);
+    await field(page, "Nowe hasło", { exact: true }).fill(newPassword);
+    await field(page, "Powtórz hasło").fill(newPassword);
     await page.getByRole("button", { name: "Ustaw hasło" }).click();
     await expect(page.getByText("Nowe hasło zostało ustawione.")).toBeVisible();
 

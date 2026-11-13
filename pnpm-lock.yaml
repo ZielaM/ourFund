@@ -32,6 +32,9 @@ importers:
       cn:
         specifier: ^0.5.2
         version: 0.5.2
+      decimal.js:
+        specifier: ^10.6.0
+        version: 10.6.0
       lucide-react:
         specifier: ^1.72.0
         version: 1.72.0(@types/react@19.3.0)(react@19.3.0)

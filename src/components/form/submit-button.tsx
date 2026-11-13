@@ -4,12 +4,14 @@ import { cn } from "cn";
 import type { ComponentProps } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { useFormPending } from "./action-form";
 
 type SubmitButtonProps = Omit<ComponentProps<typeof Button>, "type">;
 
 /** Submit button that cannot be pressed twice while its form is being sent. */
 export function SubmitButton({ children, disabled, className, ...props }: SubmitButtonProps) {
-  const { pending } = useFormStatus();
+  const status = useFormStatus();
+  const pending = useFormPending() || status.pending;
 
   return (
     <Button
