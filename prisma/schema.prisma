@@ -129,12 +129,17 @@ model Instrument {
   type        InstrumentType
   /// ISO 4217 code of the currency the instrument is quoted in.
   currency    String         @db.Char(3)
+  /// Where prices come from: fetched automatically or entered by hand.
+  priceSource PriceSource    @default(YAHOO) @map("price_source")
+  /// Symbol at the quote provider; null means "derive it from symbol and market".
+  quoteSymbol String?        @map("quote_symbol")
   createdById String?        @map("created_by_id") @db.Uuid
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   createdBy    User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
   transactions Transaction[]
+  prices       Price[]
 
   @@unique([symbol, market])
   @@map("instruments")
@@ -187,4 +192,36 @@ model Transaction {
   @@index([accountId, date])
   @@index([instrumentId])
   @@map("transactions")
+}
+
+enum PriceSource {
+  YAHOO
+  MANUAL
+
+  @@map("price_source")
+}
+
+/// Closing price of an instrument on a day, in the instrument's currency.
+model Price {
+  instrumentId String      @map("instrument_id") @db.Uuid
+  date         DateTime    @db.Date
+  close        Decimal     @db.Decimal(28, 10)
+  source       PriceSource
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  instrument Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@id([instrumentId, date])
+  @@map("prices")
+}
+
+/// Average exchange rate published by the National Bank of Poland (table A).
+model FxRate {
+  currency String   @db.Char(3)
+  date     DateTime @db.Date
+  /// PLN per one unit of `currency`.
+  rate     Decimal  @db.Decimal(18, 8)
+
+  @@id([currency, date])
+  @@map("fx_rates")
 }

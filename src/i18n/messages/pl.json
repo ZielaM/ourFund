@@ -138,7 +138,16 @@
       "deleted": "Rachunek został usunięty."
     },
     "instruments": {
-      "created": "Instrument {symbol} został dodany."
+      "created": "Instrument {symbol} został dodany.",
+      "sourceSaved": "Źródło notowań zostało zapisane."
+    },
+    "marketData": {
+      "refreshed": "Notowania zostały odświeżone.",
+      "refreshedWithErrors": "Notowania zostały odświeżone, ale części danych nie udało się pobrać. Szczegóły są poniżej."
+    },
+    "prices": {
+      "saved": "Kurs został zapisany.",
+      "deleted": "Kurs został usunięty."
     }
   },
   "errors": {
@@ -212,6 +221,16 @@
       "accountNotFound": "Wybierz rachunek z listy.",
       "instrumentNotFound": "Wybierz instrument z listy.",
       "notFound": "Tej transakcji już nie ma."
+    },
+    "quoteSymbol": {
+      "invalid": "Symbol może zawierać litery, cyfry, kropkę, myślnik oraz znaki = i ^."
+    },
+    "marketData": {
+      "off": "Pobieranie notowań jest wyłączone w konfiguracji tej instancji."
+    },
+    "prices": {
+      "notManual": "Usunąć można tylko kurs wpisany ręcznie.",
+      "notFound": "Tego kursu już nie ma."
     }
   },
   "notFound": {
@@ -332,7 +351,7 @@
   },
   "instruments": {
     "title": "Instrumenty",
-    "intro": "Katalog instrumentów jest wspólny dla wszystkich użytkowników tej instancji. Notowania pojawią się w kolejnej wersji.",
+    "intro": "Katalog instrumentów jest wspólny dla wszystkich użytkowników tej instancji.",
     "empty": "Katalog jest pusty. Dodaj pierwszy instrument, żeby zapisać transakcję kupna.",
     "table": {
       "caption": "Lista instrumentów",
@@ -340,7 +359,11 @@
       "name": "Nazwa",
       "type": "Rodzaj",
       "market": "Rynek",
-      "currency": "Waluta"
+      "currency": "Waluta",
+      "lastPrice": "Ostatni kurs",
+      "noPrice": "brak",
+      "details": "Szczegóły",
+      "detailsOf": "Szczegóły instrumentu {symbol}"
     },
     "create": {
       "title": "Nowy instrument",
@@ -351,6 +374,22 @@
       "market": "Rynek",
       "currency": "Waluta notowań",
       "submit": "Dodaj instrument"
+    },
+    "quotes": {
+      "title": "Notowania",
+      "sources": "Kursy walut pochodzą z NBP, notowania z Yahoo Finance. Pobierane są tylko instrumenty, na których zapisano transakcje.",
+      "lastRefresh": "Ostatnie odświeżenie: {when}.",
+      "never": "Notowania nie były jeszcze pobierane.",
+      "off": "Automatyczne pobieranie notowań jest wyłączone w konfiguracji tej instancji. Kursy można wpisywać ręcznie w szczegółach instrumentu.",
+      "refresh": "Odśwież notowania",
+      "failedTitle": "Czego nie udało się pobrać",
+      "reasons": {
+        "notFound": "{symbol}: nie znaleziono symbolu {quoteSymbol} w Yahoo Finance.",
+        "currencyMismatch": "{symbol}: notowania symbolu {quoteSymbol} są w innej walucie niż instrument.",
+        "unavailable": "{symbol}: źródło danych chwilowo nie odpowiada.",
+        "noSymbol": "{symbol}: brak symbolu notowań. Podaj go w szczegółach instrumentu."
+      },
+      "fxFailed": "Kursy walut NBP: {currencies}."
     }
   },
   "accountTypes": {
@@ -386,5 +425,41 @@
     "DEPOSIT": "Wpłata",
     "WITHDRAWAL": "Wypłata",
     "SPLIT": "Split"
+  },
+  "instrument": {
+    "back": "Wszystkie instrumenty",
+    "source": {
+      "title": "Źródło notowań",
+      "label": "Skąd brać kursy",
+      "options": {
+        "YAHOO": "Automatycznie (Yahoo Finance)",
+        "MANUAL": "Wpisuję ręcznie"
+      },
+      "quoteSymbol": "Symbol w Yahoo Finance",
+      "hintDefault": "Puste pole oznacza symbol domyślny: {symbol}.",
+      "hintRequired": "Dla tego rynku symbolu nie da się ustalić automatycznie. Znajdziesz go na finance.yahoo.com.",
+      "save": "Zapisz źródło"
+    },
+    "manual": {
+      "title": "Kurs wpisany ręcznie",
+      "intro": "Kurs wpisany ręcznie ma pierwszeństwo przed pobranym z tego samego dnia.",
+      "date": "Data",
+      "close": "Kurs ({currency})",
+      "submit": "Zapisz kurs"
+    },
+    "prices": {
+      "title": "Ostatnie notowania",
+      "empty": "Brak notowań.",
+      "caption": "Ostatnie notowania instrumentu",
+      "date": "Data",
+      "close": "Kurs",
+      "source": "Źródło",
+      "sources": {
+        "YAHOO": "Yahoo Finance",
+        "MANUAL": "ręcznie"
+      },
+      "delete": "Usuń",
+      "deleteLabel": "Usuń kurs z dnia {date}"
+    }
   }
 }

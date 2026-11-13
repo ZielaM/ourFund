@@ -4,6 +4,8 @@
 #   APP_PORT           port published on the host (default 3000)
 #   ALLOW_REGISTRATION "true" lets anyone who can reach the app create an account
 #                      (default "false": the administrator creates accounts)
+#   MARKET_DATA        "live" (default) fetches prices and exchange rates from the internet,
+#                      "off" never does; prices are then entered by hand
 #   POSTGRES_PASSWORD  database password (default "ourfund"; letters and digits only,
 #                      because it becomes part of a connection URL)
 name: ourfund
@@ -34,6 +36,7 @@ services:
     environment:
       DATABASE_URL: postgresql://ourfund:${POSTGRES_PASSWORD:-ourfund}@db:5432/ourfund?schema=public
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+      MARKET_DATA: ${MARKET_DATA:-live}
     ports:
       - "${APP_PORT:-3000}:3000"
 

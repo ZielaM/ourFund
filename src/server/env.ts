@@ -9,6 +9,13 @@ const envSchema = z.object({
     .enum(["true", "false"], { error: 'ALLOW_REGISTRATION must be "true" or "false"' })
     .default("false")
     .transform((value) => value === "true"),
+  /**
+   * Where prices and exchange rates come from: "live" fetches them from the internet,
+   * "off" never does (prices are then entered by hand), "fixture" serves made-up data for tests.
+   */
+  MARKET_DATA: z
+    .enum(["live", "fixture", "off"], { error: 'MARKET_DATA must be "live", "fixture" or "off"' })
+    .default("live"),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -8,6 +8,7 @@ describe("parseEnv", () => {
     expect(parseEnv({ DATABASE_URL: validUrl })).toEqual({
       DATABASE_URL: validUrl,
       ALLOW_REGISTRATION: false,
+      MARKET_DATA: "live",
     });
   });
 
@@ -23,6 +24,16 @@ describe("parseEnv", () => {
   it("rejects an unclear registration setting instead of guessing", () => {
     expect(() => parseEnv({ DATABASE_URL: validUrl, ALLOW_REGISTRATION: "yes" })).toThrowError(
       /ALLOW_REGISTRATION must be "true" or "false"/,
+    );
+  });
+
+  it.each(["live", "fixture", "off"])("accepts MARKET_DATA=%s", (mode) => {
+    expect(parseEnv({ DATABASE_URL: validUrl, MARKET_DATA: mode }).MARKET_DATA).toBe(mode);
+  });
+
+  it("rejects an unknown market data mode", () => {
+    expect(() => parseEnv({ DATABASE_URL: validUrl, MARKET_DATA: "yahoo" })).toThrowError(
+      /MARKET_DATA must be/,
     );
   });
 
