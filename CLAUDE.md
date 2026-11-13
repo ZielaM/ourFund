@@ -43,6 +43,12 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 - A user sees only their own portfolios. Services take the acting user and filter by owner;
   every new service needs an isolation test (user B cannot read or change user A's data).
 - Forms use `<ActionForm>` with the fields from `src/components/form/fields.tsx`.
+- Market data (`src/server/market-data/`): prices from Yahoo Finance's chart endpoint, exchange
+  rates from the NBP API, both behind `MarketDataProviders`. Tests never reach the internet:
+  unit tests inject a fake `fetch`, e2e runs with `MARKET_DATA=fixture`. After changing a
+  provider, run `pnpm exec tsx scripts/check-market-data.mts` against the real services.
+  stooq.pl is deliberately not used: it puts a browser check in front of automated clients.
+- Prices entered by hand (`source = MANUAL`) are never overwritten by a refresh.
 - **Tests come with the code.** Unit tests for all logic; `*.int.test.ts` for repositories and
   services against real PostgreSQL; Playwright for user flows. CI enforces 90% coverage for
   `src/domain` and `src/server`.

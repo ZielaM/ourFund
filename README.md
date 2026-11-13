@@ -4,7 +4,7 @@
 
 Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamiany u siebie w Dockerze.
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI) i ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO. Notowania, wycena w złotych, obligacje skarbowe, import z brokerów i podatki powstają w kolejnych etapach.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO oraz pobieranie notowań i kursów walut. Wycena w złotych, obligacje skarbowe, import z brokerów i podatki powstają w kolejnych etapach.
 
 ## Założenia
 
@@ -26,11 +26,24 @@ Aplikacja będzie dostępna pod adresem <http://localhost:3000>. Przy pierwszym 
 
 Opcjonalne ustawienia (plik `.env` obok `docker-compose.yml`):
 
-| Zmienna              | Domyślnie | Opis                                                                             |
-| -------------------- | --------- | -------------------------------------------------------------------------------- |
-| `APP_PORT`           | `3000`    | Port, pod którym aplikacja jest dostępna                                         |
-| `ALLOW_REGISTRATION` | `false`   | `true` pozwala każdemu, kto ma dostęp do aplikacji, założyć konto                |
-| `POSTGRES_PASSWORD`  | `ourfund` | Hasło bazy (tylko litery i cyfry); baza nie jest wystawiona poza sieć kontenerów |
+| Zmienna              | Domyślnie | Opis                                                                                   |
+| -------------------- | --------- | -------------------------------------------------------------------------------------- |
+| `APP_PORT`           | `3000`    | Port, pod którym aplikacja jest dostępna                                               |
+| `ALLOW_REGISTRATION` | `false`   | `true` pozwala każdemu, kto ma dostęp do aplikacji, założyć konto                      |
+| `MARKET_DATA`        | `live`    | `off` wyłącza pobieranie notowań i kursów z internetu; kursy wpisuje się wtedy ręcznie |
+| `POSTGRES_PASSWORD`  | `ourfund` | Hasło bazy (tylko litery i cyfry); baza nie jest wystawiona poza sieć kontenerów       |
+
+## Źródła danych
+
+Każda instancja pobiera dane samodzielnie, na własny użytek jej użytkowników. Pobierane są tylko instrumenty, na których zapisano transakcje.
+
+- **Kursy walut**: oficjalne API Narodowego Banku Polskiego (tabela A, kursy średnie).
+- **Notowania**: Yahoo Finance. To interfejs nieoficjalny: może przestać działać albo zmienić się bez zapowiedzi, a warunki korzystania z serwisu Yahoo dopuszczają go wyłącznie do użytku osobistego. Symbol notowań ustala się automatycznie (np. `CDR.WA` dla GPW) i można go zmienić w szczegółach instrumentu.
+- **Kursy wpisane ręcznie** mają zawsze pierwszeństwo przed pobranymi. Instrument można też w całości przełączyć na kursy ręczne.
+
+Notowania odświeżają się codziennie o 18:30 i 23:15 czasu polskiego oraz na żądanie (przycisk „Odśwież notowania”). Ustawienie `MARKET_DATA=off` całkowicie wyłącza połączenia z internetem.
+
+Poprawność działania źródeł na żywo sprawdza polecenie `pnpm exec tsx scripts/check-market-data.mts`.
 
 ## Praca nad kodem
 

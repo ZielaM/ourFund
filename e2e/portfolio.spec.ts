@@ -60,12 +60,8 @@ async function addTransaction(page: Page, fields: TransactionFields) {
 const holdingsTable = (page: Page) => page.getByRole("table", { name: "Otwarte pozycje" });
 const cdr = "CDR (CD Projekt)";
 
-test("pusty pulpit zaprasza do utworzenia portfela", async ({ page }) => {
+test("portfel tworzy się na pulpicie", async ({ page }) => {
   await page.goto("/");
-
-  await expect(
-    page.getByRole("heading", { name: "Nie masz jeszcze żadnego portfela" }),
-  ).toBeVisible();
 
   await page.getByRole("button", { name: "Utwórz portfel" }).click();
   await expect(page.getByText("To pole jest wymagane.")).toBeVisible();
@@ -116,7 +112,6 @@ test("rachunki dodaje się w ustawieniach portfela", async ({ page }) => {
 
 test("instrumenty trafiają do wspólnego katalogu", async ({ page }) => {
   await page.goto("/instruments");
-  await expect(page.getByText("Katalog jest pusty.")).toBeVisible();
 
   await field(page, "Symbol").fill("cdr");
   await field(page, "Nazwa").fill("CD Projekt");
@@ -372,7 +367,6 @@ test("zmiana nazwy i usunięcie portfela", async ({ page }) => {
   await page.getByRole("button", { name: "Usuń portfel" }).click();
 
   await expect(page).toHaveURL("/");
-  await expect(
-    page.getByRole("heading", { name: "Nie masz jeszcze żadnego portfela" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Pulpit" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Otwórz portfel Długoterminowy" })).toHaveCount(0);
 });

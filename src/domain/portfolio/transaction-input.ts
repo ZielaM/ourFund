@@ -25,7 +25,7 @@ const MAX_FX_DECIMAL_PLACES = 8;
 const MAX_VALUE = new Decimal("1e15");
 
 // Validation messages are error codes; the UI translates them (see `errors` in the messages file).
-function decimal(maxDecimalPlaces = MAX_DECIMAL_PLACES) {
+export function decimal(maxDecimalPlaces = MAX_DECIMAL_PLACES) {
   return z.string("required").transform((raw, context) => {
     if (raw.trim() === "") {
       context.addIssue({ code: "custom", message: "required" });
@@ -50,7 +50,7 @@ function decimal(maxDecimalPlaces = MAX_DECIMAL_PLACES) {
   });
 }
 
-const positive = (maxDecimalPlaces?: number) =>
+export const positive = (maxDecimalPlaces?: number) =>
   decimal(maxDecimalPlaces).refine((value) => value.gt(0), "number.positive");
 
 /** An optional amount: an empty field means zero. */
@@ -67,15 +67,18 @@ const currency = z
   .transform((raw) => raw.trim().toUpperCase())
   .refine(isCurrency, "currency.invalid");
 
+/** A calendar day as typed into a date field. */
+export const isoDate = z.string("required").check((context) => {
+  if (context.value === "") {
+    context.issues.push({ code: "custom", message: "required", input: context.value });
+  } else if (!isIsoDate(context.value) || context.value < EARLIEST_DATE) {
+    context.issues.push({ code: "custom", message: "date.invalid", input: context.value });
+  }
+});
+
 const base = {
   accountId: uuid,
-  date: z.string("required").check((context) => {
-    if (context.value === "") {
-      context.issues.push({ code: "custom", message: "required", input: context.value });
-    } else if (!isIsoDate(context.value) || context.value < EARLIEST_DATE) {
-      context.issues.push({ code: "custom", message: "date.invalid", input: context.value });
-    }
-  }),
+  date: isoDate,
   note: z
     .string()
     .optional()

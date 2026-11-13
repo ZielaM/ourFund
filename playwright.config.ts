@@ -38,6 +38,8 @@ export default defineConfig({
     timeout: 300_000,
     env: {
       DATABASE_URL: e2eDatabaseUrl,
+      // Made-up prices and exchange rates: tests never reach the internet.
+      MARKET_DATA: "fixture",
       PORT: String(port),
       HOSTNAME: "localhost",
     },
