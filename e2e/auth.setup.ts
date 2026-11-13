@@ -2,6 +2,7 @@ import { expect, test as setup } from "@playwright/test";
 import { fillNewAccount } from "./helpers/accounts";
 import { resetDatabase } from "./helpers/db";
 import { admin, adminStorageState } from "./helpers/env";
+import { field } from "./helpers/ui";
 
 setup("pierwsze uruchomienie: utworzenie konta administratora", async ({ page }) => {
   await resetDatabase();
@@ -26,7 +27,7 @@ setup("pierwsze uruchomienie: utworzenie konta administratora", async ({ page })
   await page.getByRole("button", { name: "Utwórz konto administratora" }).click();
   await expect(page.getByText(/Użyj od 3 do 32 znaków/)).toBeVisible();
   await expect(page.getByText("Hasło musi mieć co najmniej 10 znaków.")).toBeVisible();
-  await expect(page.getByLabel("Nazwa użytkownika")).toHaveValue("Zły Login");
+  await expect(field(page, "Nazwa użytkownika")).toHaveValue("Zły Login");
 
   await fillNewAccount(page, {
     username: admin.username,

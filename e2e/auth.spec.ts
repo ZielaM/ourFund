@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signIn } from "./helpers/accounts";
 import { admin, signedOut } from "./helpers/env";
+import { field } from "./helpers/ui";
 
 test.describe("bez zalogowania", () => {
   test.use({ storageState: signedOut });
@@ -34,7 +35,7 @@ test.describe("bez zalogowania", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Nie ma takiej strony" }),
     ).toBeVisible();
-    await expect(page.getByLabel("Nazwa użytkownika")).toHaveCount(0);
+    await expect(field(page, "Nazwa użytkownika")).toHaveCount(0);
     await page.goto("/login");
     await expect(page.getByRole("link", { name: "Załóż konto" })).toHaveCount(0);
   });
@@ -49,7 +50,7 @@ test.describe("bez zalogowania", () => {
   test("błędne hasło nie zdradza, czy konto istnieje", async ({ page }) => {
     await signIn(page, admin.username, "zle-haslo-administratora");
     await expect(page.getByText("Nieprawidłowa nazwa użytkownika lub hasło.")).toBeVisible();
-    await expect(page.getByLabel("Nazwa użytkownika")).toHaveValue(admin.username);
+    await expect(field(page, "Nazwa użytkownika")).toHaveValue(admin.username);
 
     await signIn(page, "nie-ma-takiego", "zle-haslo-administratora");
     await expect(page.getByText("Nieprawidłowa nazwa użytkownika lub hasło.")).toBeVisible();
@@ -74,7 +75,6 @@ test.describe("bez zalogowania", () => {
 
     await expect(page).toHaveURL("/");
     await expect(page.getByRole("heading", { level: 1, name: "Pulpit" })).toBeVisible();
-    await expect(page.getByText("Nie masz jeszcze żadnego portfela")).toBeVisible();
 
     // A signed-in user has no reason to see the sign-in page.
     await page.goto("/login");

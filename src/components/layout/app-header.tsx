@@ -34,9 +34,10 @@ export async function AppHeader() {
   return (
     <HeaderFrame>
       <nav aria-label={t("main")} className="flex items-center gap-5">
-        <NavLink href="/" exact>
+        <NavLink href="/" exact alsoActiveUnder={["/portfolios"]}>
           {t("dashboard")}
         </NavLink>
+        <NavLink href="/instruments">{t("instruments")}</NavLink>
         {user.role === "ADMIN" ? <NavLink href="/admin/users">{t("users")}</NavLink> : null}
       </nav>
       <div className="ml-auto flex items-center gap-5">

@@ -4,7 +4,7 @@
 
 Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamiany u siebie w Dockerze.
 
-> **Projekt we wczesnej fazie budowy.** Działa szkielet aplikacji; funkcje portfela powstają etapami.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI) i ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO. Notowania, wycena w złotych, obligacje skarbowe, import z brokerów i podatki powstają w kolejnych etapach.
 
 ## Założenia
 

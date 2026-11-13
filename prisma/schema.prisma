@@ -35,7 +35,9 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  sessions Session[]
+  sessions    Session[]
+  portfolios  Portfolio[]
+  instruments Instrument[]
 
   @@map("users")
 }
@@ -62,4 +64,127 @@ model LoginAttempt {
 
   @@index([username, createdAt])
   @@map("login_attempts")
+}
+
+/// A user's grouping of investment accounts, e.g. "Emerytura" or "Główny".
+model Portfolio {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts Account[]
+
+  @@unique([userId, name])
+  @@map("portfolios")
+}
+
+/// Polish account wrappers differ in tax treatment: IKE, IKZE and OKI are tax-advantaged.
+enum AccountType {
+  STANDARD
+  IKE
+  IKZE
+  OKI
+
+  @@map("account_type")
+}
+
+/// An account at a broker or bank. Tax lots (FIFO) are tracked per account.
+model Account {
+  id          String      @id @default(uuid()) @db.Uuid
+  portfolioId String      @map("portfolio_id") @db.Uuid
+  name        String
+  type        AccountType @default(STANDARD)
+  /// Broker or bank, free text (e.g. "XTB").
+  institution String?
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  portfolio    Portfolio     @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([portfolioId, name])
+  @@map("accounts")
+}
+
+enum InstrumentType {
+  STOCK
+  ETF
+  BOND
+  CRYPTO
+
+  @@map("instrument_type")
+}
+
+/// A tradable instrument. The catalogue is shared by all users of the instance.
+model Instrument {
+  id          String         @id @default(uuid()) @db.Uuid
+  /// Ticker, stored upper case (e.g. "CDR", "VWCE").
+  symbol      String
+  /// Market code from the list in src/domain/portfolio/markets.ts (e.g. "GPW").
+  market      String
+  name        String
+  type        InstrumentType
+  /// ISO 4217 code of the currency the instrument is quoted in.
+  currency    String         @db.Char(3)
+  createdById String?        @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy    User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+
+  @@unique([symbol, market])
+  @@map("instruments")
+}
+
+enum TransactionType {
+  BUY
+  SELL
+  DIVIDEND
+  INTEREST
+  FEE
+  DEPOSIT
+  WITHDRAWAL
+  SPLIT
+
+  @@map("transaction_type")
+}
+
+/// One entry in an account's history. Which fields are used depends on the type;
+/// the rules live in src/domain/portfolio/transaction-input.ts.
+model Transaction {
+  id           String          @id @default(uuid()) @db.Uuid
+  accountId    String          @map("account_id") @db.Uuid
+  type         TransactionType
+  date         DateTime        @db.Date
+  instrumentId String?         @map("instrument_id") @db.Uuid
+  /// BUY, SELL: number of units.
+  quantity     Decimal?        @db.Decimal(28, 10)
+  /// BUY, SELL: price of one unit in the instrument's currency.
+  price        Decimal?        @db.Decimal(28, 10)
+  /// Currency in which cash moved on the account (amount, fee and tax are in it).
+  currency     String          @db.Char(3)
+  /// Units of `currency` per one unit of the instrument's currency; 1 when they are the same.
+  fxRate       Decimal         @default(1) @map("fx_rate") @db.Decimal(18, 8)
+  /// DIVIDEND, INTEREST: gross amount. FEE, DEPOSIT, WITHDRAWAL: the amount.
+  amount       Decimal?        @db.Decimal(28, 10)
+  /// BUY, SELL: commission.
+  fee          Decimal         @default(0) @db.Decimal(28, 10)
+  /// DIVIDEND, INTEREST: tax withheld at source.
+  tax          Decimal         @default(0) @db.Decimal(28, 10)
+  /// SPLIT: new units per one old unit (4 for a 4:1 split, 0.1 for a 1:10 reverse split).
+  splitRatio   Decimal?        @map("split_ratio") @db.Decimal(18, 8)
+  note         String?
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  account    Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  instrument Instrument? @relation(fields: [instrumentId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, date])
+  @@index([instrumentId])
+  @@map("transactions")
 }

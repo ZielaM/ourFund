@@ -42,6 +42,17 @@ describe("NavLink", () => {
     expect(screen.getByRole("link")).not.toHaveAttribute("aria-current");
   });
 
+  it("can also cover other sections", () => {
+    pathname.mockReturnValue("/portfolios/123/settings");
+    render(
+      <NavLink href="/" exact alsoActiveUnder={["/portfolios"]}>
+        Pulpit
+      </NavLink>,
+    );
+
+    expect(screen.getByRole("link")).toHaveAttribute("aria-current", "page");
+  });
+
   it("with `exact`, is marked only on the exact path", () => {
     pathname.mockReturnValue("/settings");
     render(

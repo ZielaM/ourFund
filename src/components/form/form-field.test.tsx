@@ -47,3 +47,25 @@ describe("FormField", () => {
     expect(input).toHaveAttribute("autocomplete", "new-password");
   });
 });
+
+describe("FormField in several forms on one page", () => {
+  it("gives fields with the same name different ids, so each label finds its own input", () => {
+    render(
+      <>
+        <form aria-label="first">
+          <FormField name="name" label="Nazwa portfela" />
+        </form>
+        <form aria-label="second">
+          <FormField name="name" label="Nazwa rachunku" error="To pole jest wymagane." />
+        </form>
+      </>,
+    );
+
+    const first = screen.getByLabelText("Nazwa portfela");
+    const second = screen.getByLabelText("Nazwa rachunku");
+
+    expect(first.id).not.toBe(second.id);
+    expect(first).not.toHaveAccessibleDescription();
+    expect(second).toHaveAccessibleDescription("To pole jest wymagane.");
+  });
+});
