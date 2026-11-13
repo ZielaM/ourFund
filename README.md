@@ -9,7 +9,7 @@ Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamian
 ## Założenia
 
 - Aplikacja webowa (Next.js + TypeScript) z bazą PostgreSQL, uruchamiana przez `docker compose`.
-- Tylko konta lokalne — dane zostają na Twoim serwerze.
+- Tylko konta lokalne — dane zostają na Twoim serwerze. Nie ma odzyskiwania hasła e-mailem: nowe hasło nadaje administrator.
 - Polskie realia: GPW, detaliczne obligacje skarbowe, rachunki IKE / IKZE / OKI, PIT-38.
 
 ## Uruchomienie
@@ -22,14 +22,15 @@ cd ourFund
 docker compose up -d --build
 ```
 
-Aplikacja będzie dostępna pod adresem <http://localhost:3000>. Migracje bazy wykonują się same przy starcie kontenera, a dane są trzymane w wolumenie `ourfund_db-data`.
+Aplikacja będzie dostępna pod adresem <http://localhost:3000>. Przy pierwszym wejściu utworzysz konto administratora; kolejne osoby dodaje administrator w zakładce „Użytkownicy”. Migracje bazy wykonują się same przy starcie kontenera, a dane są trzymane w wolumenie `ourfund_db-data`.
 
 Opcjonalne ustawienia (plik `.env` obok `docker-compose.yml`):
 
-| Zmienna             | Domyślnie | Opis                                                                             |
-| ------------------- | --------- | -------------------------------------------------------------------------------- |
-| `APP_PORT`          | `3000`    | Port, pod którym aplikacja jest dostępna                                         |
-| `POSTGRES_PASSWORD` | `ourfund` | Hasło bazy (tylko litery i cyfry); baza nie jest wystawiona poza sieć kontenerów |
+| Zmienna              | Domyślnie | Opis                                                                             |
+| -------------------- | --------- | -------------------------------------------------------------------------------- |
+| `APP_PORT`           | `3000`    | Port, pod którym aplikacja jest dostępna                                         |
+| `ALLOW_REGISTRATION` | `false`   | `true` pozwala każdemu, kto ma dostęp do aplikacji, założyć konto                |
+| `POSTGRES_PASSWORD`  | `ourfund` | Hasło bazy (tylko litery i cyfry); baza nie jest wystawiona poza sieć kontenerów |
 
 ## Praca nad kodem
 
