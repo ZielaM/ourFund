@@ -4,7 +4,7 @@
 
 Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamiany u siebie w Dockerze.
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, a także detaliczne obligacje skarbowe wyceniane z warunków emisji. Import z brokerów i podatki powstają w kolejnych etapach.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji oraz zestawienie do PIT-38. Import z brokerów i historia dywidend powstają w kolejnych etapach.
 
 ## Założenia
 
@@ -46,6 +46,19 @@ Każda instancja pobiera dane samodzielnie, na własny użytek jej użytkownikó
 Notowania odświeżają się codziennie o 18:30 i 23:15 czasu polskiego oraz na żądanie (przycisk „Odśwież notowania”). Ustawienie `MARKET_DATA=off` całkowicie wyłącza połączenia z internetem.
 
 Poprawność działania źródeł na żywo sprawdza polecenie `pnpm exec tsx scripts/check-market-data.mts`.
+
+## Podatki
+
+Zakładka „Podatki” przygotowuje dane do rocznego zeznania PIT-38 ze wszystkich portfeli użytkownika:
+
+- **Sprzedaż papierów wartościowych**: przychód, koszty i dochód, z kosztem ustalanym metodą FIFO osobno na każdym rachunku.
+- **Dywidendy i odsetki z zagranicy**: podatek 19% pomniejszony o podatek pobrany za granicą.
+- **Kryptowaluty**: przychód, koszty poniesione w roku i koszty przenoszone z lat ubiegłych.
+- Rachunki IKE, IKZE i OKI są pomijane. Dywidendy od polskich spółek i wykup obligacji oszczędnościowych, od których podatek pobiera płatnik, są pokazane osobno jako kwoty poza zeznaniem.
+
+Kwoty w walutach obcych są przeliczane po średnim kursie NBP z ostatniego dnia roboczego przed transakcją; gdy rachunek płacił w złotych, liczy się kwota w złotych po kursie brokera. Zestawienie przyjmuje datę transakcji taką, jaką wpisano, nie odlicza strat z lat ubiegłych i nie zna stawek z umów o unikaniu podwójnego opodatkowania (odliczenie podatku zagranicznego ogranicza do 19% każdej wypłaty).
+
+To pomoc w wypełnieniu zeznania, a nie porada podatkowa. Kwoty warto porównać z PIT-8C od brokera.
 
 ## Praca nad kodem
 

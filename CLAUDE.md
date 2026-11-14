@@ -70,6 +70,14 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 - Returns (TWR, XIRR) are measured on the securities only: buying is a contribution, selling
   and dividends are withdrawals. Deposits and withdrawals of cash are ignored on purpose, so
   results do not depend on whether a user records them. Rates are plain numbers; money is not.
+- The tax report (`src/domain/tax/pit38.ts`, `/taxes`) is per user, across portfolios, and
+  covers `STANDARD` accounts only. Foreign amounts use the NBP rate of the last working day
+  **before** the transaction (the valuation uses the rate of the day itself); a rate older
+  than ten days counts as missing. Securities are matched FIFO per account; virtual currencies
+  are not: every purchase is a cost of its year and uncovered costs carry forward. Retail
+  treasury bonds and payments from Polish payers stay outside the return. Tax bases and taxes
+  are rounded to full złoty. Texts must not promise more than the code does: it is an aid,
+  not tax advice.
 - Charts follow one rule set: one accent series (`--chart-value`), context in gray
   (`--chart-context`), hairline grid, a legend, a tooltip listing every series, and a table
   view of the same data.

@@ -8,11 +8,12 @@
   "nav": {
     "main": "Nawigacja główna",
     "dashboard": "Pulpit",
+    "instruments": "Instrumenty",
+    "taxes": "Podatki",
     "users": "Użytkownicy",
     "settings": "Ustawienia",
     "signOut": "Wyloguj się",
-    "signedInAs": "Zalogowano jako {username}",
-    "instruments": "Instrumenty"
+    "signedInAs": "Zalogowano jako {username}"
   },
   "auth": {
     "tagline": "Tracker portfela inwestycyjnego, który działa na Twoim serwerze.",
@@ -592,6 +593,86 @@
       "noRates": "Nie wpisano jeszcze oprocentowania kolejnych okresów.",
       "deleteRate": "Usuń",
       "deleteRateLabel": "Usuń oprocentowanie okresu {number}"
+    }
+  },
+  "tax": {
+    "title": "Podatki",
+    "heading": "Zestawienie do PIT-38 za {year} rok",
+    "intro": "Dane do rocznego zeznania PIT-38, policzone z transakcji na rachunkach zwykłych we wszystkich Twoich portfelach. To pomoc w wypełnieniu zeznania, a nie porada podatkowa: porównaj kwoty z PIT-8C od swojego brokera.",
+    "method": "Kwoty w walutach obcych są przeliczane po średnim kursie NBP z ostatniego dnia roboczego przed transakcją. Gdy rachunek płacił w złotych, liczy się kwota w złotych po kursie brokera. Koszt sprzedanych papierów jest ustalany metodą FIFO, osobno na każdym rachunku.",
+    "years": "Lata podatkowe",
+    "yearLabel": "Rok {year}",
+    "empty": {
+      "title": "Nie ma jeszcze czego rozliczać",
+      "body": "Zestawienie pojawi się, gdy na rachunku zwykłym zapiszesz pierwszą transakcję."
+    },
+    "nothing": "W {year} roku nie było sprzedaży ani wypłat do rozliczenia.",
+    "missingRates": "Brakuje kursów NBP dla: {currencies}. Kwoty, których nie da się bez nich przeliczyć, są oznaczone jako „brak kursu”.",
+    "refreshLink": "Przejdź do instrumentów, aby pobrać kursy",
+    "unknown": "brak kursu",
+    "securities": {
+      "title": "Sprzedaż papierów wartościowych",
+      "intro": "Akcje, ETF-y i obligacje notowane na giełdzie. W zeznaniu to przychody z odpłatnego zbycia papierów wartościowych.",
+      "revenue": "Przychód",
+      "costs": "Koszty uzyskania przychodu",
+      "costsShort": "Koszty",
+      "income": "Dochód",
+      "loss": "Strata",
+      "base": "Podstawa opodatkowania",
+      "tax": "Podatek 19%",
+      "none": "W tym roku nie było sprzedaży.",
+      "caption": "Sprzedaże papierów wartościowych w {year} roku",
+      "date": "Data sprzedaży",
+      "instrument": "Instrument",
+      "account": "Rachunek",
+      "quantity": "Liczba",
+      "acquired": "kupione od {date}",
+      "result": "Wynik",
+      "earlier": "Wyniki z poprzednich lat",
+      "earlierHint": "Stratę możesz odliczyć w zeznaniu przez pięć kolejnych lat. Zestawienie jej nie odlicza.",
+      "earlierCaption": "Wynik ze sprzedaży papierów wartościowych w poprzednich latach",
+      "year": "Rok"
+    },
+    "foreign": {
+      "title": "Dywidendy i odsetki z zagranicy",
+      "intro": "Wypłaty od spółek notowanych poza Polską oraz odsetki otrzymane w walucie obcej. Podatek pobrany za granicą zmniejsza polski podatek 19%, a różnicę dopłacasz w zeznaniu.",
+      "gross": "Przychód brutto",
+      "taxDue": "Podatek 19%",
+      "paidAbroad": "Podatek pobrany za granicą",
+      "deductible": "z tego do odliczenia",
+      "toPay": "Do zapłaty",
+      "deductibleHint": "Odliczyć można najwyżej tyle, ile przewiduje umowa o unikaniu podwójnego opodatkowania z danym krajem (zwykle 15%). Zestawienie nie zna stawek z umów i ogranicza odliczenie do 19% każdej wypłaty.",
+      "caption": "Dywidendy i odsetki z zagranicy w {year} roku",
+      "date": "Data",
+      "source": "Od kogo",
+      "amount": "Kwota brutto",
+      "rate": "Kurs NBP",
+      "rateFrom": "z {date}",
+      "grossPln": "Brutto w zł",
+      "withheld": "Podatek pobrany",
+      "cashInterest": "Odsetki od gotówki"
+    },
+    "crypto": {
+      "title": "Kryptowaluty",
+      "intro": "Waluty wirtualne rozlicza się osobno: kosztem są wszystkie zakupy z danego roku, także tych jednostek, których jeszcze nie sprzedano. Koszty, których nie pokrył przychód, przechodzą na następny rok.",
+      "revenue": "Przychód",
+      "costs": "Koszty poniesione w roku",
+      "carried": "Koszty z lat ubiegłych",
+      "income": "Dochód",
+      "carryForward": "Koszty do przeniesienia na następny rok",
+      "tax": "Podatek 19%"
+    },
+    "outside": {
+      "title": "Poza zeznaniem",
+      "intro": "Te kwoty nie trafiają do PIT-38. Są tu po to, żeby było widać, że niczego nie pominięto.",
+      "domestic": "Dywidendy i odsetki z Polski",
+      "domesticBody": "Brutto {gross}, podatek pobrany przez płatnika {withheld}. Podatek odprowadził już płatnik.",
+      "bonds": "Wykup obligacji oszczędnościowych",
+      "bondsBody": "Zysk {income}. Podatek od odsetek pobiera przy wykupie bank obsługujący obligacje.",
+      "accounts": "Rachunki IKE, IKZE i OKI",
+      "accountsBody": "Transakcje na tych rachunkach nie wchodzą do zestawienia: {accounts}.",
+      "accountEntry": "{name} ({type}, portfel {portfolio})",
+      "oki": "Dochody na OKI nie podlegają podatkowi dochodowemu. Od 2027 roku rozlicza się za nie osobny podatek od wartości aktywów ponad kwotę wolną, w e-Urzędzie Skarbowym, na podstawie informacji od instytucji prowadzącej konto."
     }
   }
 }
