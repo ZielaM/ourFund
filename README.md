@@ -24,12 +24,26 @@ docker compose up -d --build
 
 Aplikacja będzie dostępna pod adresem <http://localhost:3000>. Przy pierwszym wejściu utworzysz konto administratora; kolejne osoby dodaje administrator w zakładce „Użytkownicy”. Migracje bazy wykonują się same przy starcie kontenera, a dane są trzymane w wolumenie `ourfund_db-data`.
 
+### Gotowy obraz
+
+Od pierwszego wydania każda wersja jest publikowana jako obraz `ghcr.io/zielam/ourfund` (architektura amd64). Żeby nie budować aplikacji samodzielnie, pobierz obraz i uruchom stos bez budowania:
+
+```bash
+docker compose pull app
+docker compose up -d --no-build
+```
+
+Konkretną wersję wybiera zmienna `OURFUND_VERSION` (np. `0.1.0`); domyślnie pobierana jest najnowsza. Na innych architekturach, np. na Raspberry Pi, zbuduj obraz lokalnie poleceniem `docker compose up -d --build`.
+
+Aktualizacja do nowej wersji to ponowne `docker compose pull app` i `docker compose up -d --no-build`. Migracje bazy wykonają się same; przed aktualizacją zrób kopię zapasową.
+
 Opcjonalne ustawienia (plik `.env` obok `docker-compose.yml`):
 
 | Zmienna              | Domyślnie | Opis                                                                                   |
 | -------------------- | --------- | -------------------------------------------------------------------------------------- |
 | `APP_PORT`           | `3000`    | Port, pod którym aplikacja jest dostępna                                               |
 | `ALLOW_REGISTRATION` | `false`   | `true` pozwala każdemu, kto ma dostęp do aplikacji, założyć konto                      |
+| `OURFUND_VERSION`    | `latest`  | Wersja gotowego obrazu, np. `0.1.0`                                                    |
 | `MARKET_DATA`        | `live`    | `off` wyłącza pobieranie notowań i kursów z internetu; kursy wpisuje się wtedy ręcznie |
 | `POSTGRES_PASSWORD`  | `ourfund` | Hasło bazy (tylko litery i cyfry); baza nie jest wystawiona poza sieć kontenerów       |
 
