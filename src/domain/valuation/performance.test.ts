@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Decimal } from "@/domain/decimal";
 import type { LedgerEntry } from "@/domain/portfolio/ledger";
 import {
+  benchmarkLevels,
   buildCostTimeline,
   buildQuantityTimeline,
   contributions,
   createPriceLookup,
+  cumulativeReturns,
   dailyDates,
   timeWeightedReturns,
   valueSeries,
@@ -582,5 +584,81 @@ describe("xirr", () => {
     ["only zero amounts", [flow("2025-01-01", 0), flow("2026-01-01", 0)]],
   ])("does not exist for %s", (_reason, flows) => {
     expect(xirr(flows)).toBeNull();
+  });
+});
+
+describe("benchmarkLevels", () => {
+  const priceOn = createPriceLookup(
+    new Map([
+      [
+        "SPX",
+        [
+          { date: "2026-01-12", close: d(5000) },
+          { date: "2026-01-14", close: d(5100) },
+        ],
+      ],
+    ]),
+    [],
+  );
+  const days = dailyDates("2026-01-11", "2026-01-14");
+
+  it("is the benchmark's price in PLN, carried forward over days without a quote", () => {
+    const levels = benchmarkLevels("SPX", "USD", days, priceOn, usdAt("4"));
+
+    expect(levels).toEqual([
+      { date: "2026-01-11", level: null },
+      { date: "2026-01-12", level: 20000 },
+      { date: "2026-01-13", level: 20000 },
+      { date: "2026-01-14", level: 20400 },
+    ]);
+  });
+
+  it("needs no exchange rate for a benchmark quoted in PLN", () => {
+    const levels = benchmarkLevels("SPX", "PLN", days, priceOn, noFx);
+
+    expect(levels.map((point) => point.level)).toEqual([null, 5000, 5000, 5100]);
+  });
+
+  it("is unknown without an exchange rate", () => {
+    const levels = benchmarkLevels("SPX", "USD", days, priceOn, noFx);
+
+    expect(levels.every((point) => point.level === null)).toBe(true);
+  });
+});
+
+describe("cumulativeReturns", () => {
+  const level = (date: string, value: number | null) => ({ date, level: value });
+
+  it("starts at zero on the first known day and follows the level", () => {
+    const returns = cumulativeReturns([
+      level("2026-01-11", null),
+      level("2026-01-12", 200),
+      level("2026-01-13", 220),
+      level("2026-01-14", 190),
+    ]);
+
+    expect(returns.map((point) => point.value && Number(point.value.toFixed(6)))).toEqual([
+      null,
+      0,
+      0.1,
+      -0.05,
+    ]);
+  });
+
+  it("keeps gaps as gaps", () => {
+    const returns = cumulativeReturns([
+      level("2026-01-12", 200),
+      level("2026-01-13", null),
+      level("2026-01-14", 210),
+    ]);
+
+    expect(returns.map((point) => point.value)).toEqual([0, null, expect.closeTo(0.05, 10)]);
+  });
+
+  it("has no returns when no level is known", () => {
+    expect(cumulativeReturns([level("2026-01-12", null)])).toEqual([
+      { date: "2026-01-12", value: null },
+    ]);
+    expect(cumulativeReturns([])).toEqual([]);
   });
 });

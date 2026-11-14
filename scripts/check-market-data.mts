@@ -14,6 +14,9 @@ const quotes: [string, string][] = [
   ["VOD.L", "GBP"],
   ["AAPL", "USD"],
   ["BTC-USD", "USD"],
+  // Benchmarks: an ETF tracking WIG20TR and the S&P 500 index.
+  ["ETFBW20TR.WA", "PLN"],
+  ["^GSPC", "USD"],
   ["NO-SUCH-SYMBOL.WA", "PLN"],
 ];
 

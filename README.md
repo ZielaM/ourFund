@@ -4,7 +4,7 @@
 
 Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamiany u siebie w Dockerze.
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), struktura portfela i wykres wartości. Obligacje skarbowe, import z brokerów i podatki powstają w kolejnych etapach.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości. Obligacje skarbowe, import z brokerów i podatki powstają w kolejnych etapach.
 
 ## Założenia
 
@@ -39,6 +39,7 @@ Każda instancja pobiera dane samodzielnie, na własny użytek jej użytkownikó
 
 - **Kursy walut**: oficjalne API Narodowego Banku Polskiego (tabela A, kursy średnie).
 - **Notowania**: Yahoo Finance. To interfejs nieoficjalny: może przestać działać albo zmienić się bez zapowiedzi, a warunki korzystania z serwisu Yahoo dopuszczają go wyłącznie do użytku osobistego. Symbol notowań ustala się automatycznie (np. `CDR.WA` dla GPW) i można go zmienić w szczegółach instrumentu.
+- **Benchmark**: dowolny instrument z katalogu. Yahoo Finance nie udostępnia historii indeksów GPW (WIG, WIG20), dlatego dla polskiego rynku benchmarkiem powinien być ETF na indeks, np. `ETFBW20TR` (WIG20TR). Indeksy zagraniczne działają po podaniu symbolu, np. `^GSPC` dla S&P 500.
 - **Kursy wpisane ręcznie** mają zawsze pierwszeństwo przed pobranymi. Instrument można też w całości przełączyć na kursy ręczne.
 
 Notowania odświeżają się codziennie o 18:30 i 23:15 czasu polskiego oraz na żądanie (przycisk „Odśwież notowania”). Ustawienie `MARKET_DATA=off` całkowicie wyłącza połączenia z internetem.

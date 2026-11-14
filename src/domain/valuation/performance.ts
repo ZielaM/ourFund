@@ -349,3 +349,40 @@ export function xirr(flows: readonly DatedAmount[]): number | null {
 
   return (low + high) / 2;
 }
+
+export type LevelPoint = {
+  date: IsoDate;
+  /** The benchmark's price in PLN that day; null when it is not known. */
+  level: number | null;
+};
+
+/** The price of a benchmark in PLN on each of the given days. */
+export function benchmarkLevels(
+  instrumentId: string,
+  currency: string,
+  dates: readonly IsoDate[],
+  priceOn: PriceOn,
+  fxOn: FxOn,
+): LevelPoint[] {
+  return dates.map((date) => {
+    const price = priceOn(instrumentId, date);
+    const rate = currency === REPORTING_CURRENCY ? new Decimal(1) : fxOn(currency, date);
+
+    return { date, level: price && rate ? price.close.times(rate).toNumber() : null };
+  });
+}
+
+/**
+ * Cumulative return of a series of levels since the first known level: 0 on that day,
+ * 0.1 once the level is 10% higher. Days before the first level have no return.
+ */
+export function cumulativeReturns(
+  points: readonly LevelPoint[],
+): { date: IsoDate; value: number | null }[] {
+  const base = points.find((point) => point.level !== null && point.level > 0)?.level;
+
+  return points.map(({ date, level }) => ({
+    date,
+    value: base && level !== null ? level / base - 1 : null,
+  }));
+}

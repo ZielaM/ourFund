@@ -8,7 +8,7 @@ import { AllocationList } from "@/components/portfolio/allocation-list";
 import { ClosedHoldingsTable, HoldingsTable } from "@/components/portfolio/holdings-table";
 import { PortfolioSummary } from "@/components/portfolio/portfolio-summary";
 import { TransactionsTable } from "@/components/portfolio/transactions-table";
-import { ValueChart } from "@/components/portfolio/value-chart";
+import { TimeChart } from "@/components/portfolio/time-chart";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { InstrumentType } from "@/domain/portfolio/naming";
-import { formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, formatSignedPercent } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
 import { getPortfolio } from "@/server/portfolio/portfolios";
@@ -56,6 +56,7 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
   const open = valuation.holdings.filter((holding) => !holding.quantity.isZero());
   const closed = valuation.holdings.filter((holding) => holding.quantity.isZero());
   const settingsHref = `/portfolios/${portfolio.id}/settings`;
+  const benchmark = valuation.performance.benchmark;
   const hasHistory = valuation.performance.chart.some((point) => point.cost !== 0);
   const classLabel = (key: string) => tClasses(key as InstrumentType | "CASH");
 
@@ -111,12 +112,66 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
             </h2>
             {hasHistory ? (
               <div className="rounded-lg border bg-card p-4 sm:p-5">
-                <ValueChart points={valuation.performance.chart} />
+                <TimeChart
+                  points={valuation.performance.chart.map((point) => ({
+                    date: point.date,
+                    primary: point.value,
+                    context: point.cost,
+                  }))}
+                  description={t("chart.description")}
+                  primaryLabel={t("chart.value")}
+                  contextLabel={t("chart.cost")}
+                  tableLabel={t("chart.table")}
+                  dateLabel={t("chart.date")}
+                  format="pln"
+                  contextSteps
+                />
               </div>
             ) : (
               <p className="text-muted-foreground">{t("chart.empty")}</p>
             )}
           </section>
+
+          {benchmark ? (
+            <section aria-labelledby="benchmark-title" className="mt-12 flex flex-col gap-4">
+              <h2 id="benchmark-title" className="text-xl font-semibold">
+                {t("benchmark.title")}
+              </h2>
+              {benchmark.return === null || valuation.performance.twr === null ? (
+                <p className="text-muted-foreground">
+                  {t("benchmark.noData", { symbol: benchmark.instrument.symbol })}
+                </p>
+              ) : (
+                <>
+                  <p className="tabular-nums">
+                    {t("benchmark.summary", {
+                      portfolio: formatSignedPercent(valuation.performance.twr),
+                      symbol: benchmark.instrument.symbol,
+                      benchmark: formatSignedPercent(benchmark.return),
+                    })}
+                  </p>
+                  <div className="rounded-lg border bg-card p-4 sm:p-5">
+                    <TimeChart
+                      points={benchmark.chart.map((point) => ({
+                        date: point.date,
+                        primary: point.portfolio,
+                        context: point.benchmark,
+                      }))}
+                      description={t("benchmark.description", {
+                        symbol: benchmark.instrument.symbol,
+                        date: formatDate(benchmark.chart[0].date),
+                      })}
+                      primaryLabel={t("benchmark.portfolio")}
+                      contextLabel={benchmark.instrument.symbol}
+                      tableLabel={t("chart.table")}
+                      dateLabel={t("chart.date")}
+                      format="percent"
+                    />
+                  </div>
+                </>
+              )}
+            </section>
+          ) : null}
 
           <section aria-labelledby="holdings-title" className="mt-12 flex flex-col gap-4">
             <h2 id="holdings-title" className="text-xl font-semibold">

@@ -120,7 +120,7 @@ describe("getPortfolioValuation", () => {
       holdings: [],
       cash: [],
       allocation: { byClass: [], byCurrency: [], byAccount: [] },
-      performance: { twr: null, xirr: null, since: null, chart: [] },
+      performance: { twr: null, xirr: null, since: null, chart: [], benchmark: null },
       missing: { marketPrices: [], rates: [] },
     });
     expect(fixed(valuation?.totals.value)).toBe("0");
@@ -302,6 +302,58 @@ describe("getPortfolioValuation", () => {
     // 2 × (150 × 4.5 − 100 × 4.0)
     expect(fixed(apple?.realized)).toBe("550");
     expect(fixed(valuation.totals.realized)).toBe("550");
+  });
+
+  it("has no benchmark comparison unless a benchmark was chosen", async () => {
+    await seedTransactions();
+    await seedMarketData();
+
+    const valuation = (await getPortfolioValuation(db, ania, portfolioId, now))!;
+
+    expect(valuation.performance.benchmark).toBeNull();
+  });
+
+  it("compares the portfolio with its benchmark in PLN over the same period", async () => {
+    await seedTransactions();
+    await seedMarketData();
+    const spx = await db.instrument.create({
+      data: { symbol: "SPX", market: "OTHER", name: "S&P 500", type: "INDEX", currency: "USD" },
+    });
+    await db.portfolio.update({
+      where: { id: portfolioId },
+      data: { benchmarkInstrumentId: spx.id },
+    });
+    await price(spx.id, "2026-01-12", "5000");
+    await price(spx.id, "2026-11-13", "5500");
+
+    const { performance } = (await getPortfolioValuation(db, ania, portfolioId, now))!;
+    const benchmark = performance.benchmark!;
+
+    expect(benchmark.instrument).toEqual({ id: spx.id, symbol: "SPX", name: "S&P 500" });
+    // 5500 × 4.2 against 5000 × 4.0: the index rose 10% and the dollar 5%.
+    expect(benchmark.return).toBeCloseTo(0.155, 10);
+    expect(benchmark.chart[0]).toEqual({ date: "2026-01-02", portfolio: 0, benchmark: null });
+    expect(benchmark.chart.at(-1)).toMatchObject({ date: "2026-11-13" });
+    expect(benchmark.chart.at(-1)?.portfolio).toBeCloseTo(performance.twr!, 10);
+    expect(benchmark.chart.at(-1)?.benchmark).toBeCloseTo(0.155, 10);
+    expect(benchmark.chart.find((point) => point.date === "2026-01-12")?.benchmark).toBe(0);
+  });
+
+  it("has no benchmark return while the benchmark has no prices", async () => {
+    await seedTransactions();
+    await seedMarketData();
+    const spx = await db.instrument.create({
+      data: { symbol: "SPX", market: "OTHER", name: "S&P 500", type: "INDEX", currency: "USD" },
+    });
+    await db.portfolio.update({
+      where: { id: portfolioId },
+      data: { benchmarkInstrumentId: spx.id },
+    });
+
+    const { performance } = (await getPortfolioValuation(db, ania, portfolioId, now))!;
+
+    expect(performance.benchmark?.return).toBeNull();
+    expect(performance.twr).not.toBeNull();
   });
 
   it("returns null for another user's portfolio and for an unknown one", async () => {

@@ -131,6 +131,54 @@ test("instrument z kursami wpisywanymi ręcznie nie jest pobierany", async ({ pa
   await expect(page.getByText(/OBL: nie znaleziono symbolu/)).toHaveCount(0);
 });
 
+test("portfel porównuje się z wybranym benchmarkiem", async ({ page }) => {
+  // An index can be a benchmark but cannot be traded.
+  await page.goto("/instruments");
+  await field(page, "Symbol").fill("IDX");
+  await field(page, "Nazwa").fill("Indeks testowy");
+  await field(page, "Rodzaj").selectOption({ label: "Indeks" });
+  await page.getByRole("button", { name: "Dodaj instrument" }).click();
+  await expect(page.getByText("Instrument IDX został dodany.")).toBeVisible();
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Otwórz portfel Notowania" }).click();
+  await expect(page.getByRole("heading", { name: "Na tle benchmarku" })).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Dodaj transakcję" }).click();
+  await expect(
+    field(page, "Instrument").getByRole("option", { name: "IDX (Indeks testowy)" }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Anuluj" }).click();
+
+  await page.getByRole("link", { name: "Ustawienia portfela" }).click();
+  await field(page, "Instrument porównawczy").selectOption({ label: "IDX (Indeks testowy)" });
+  await page.getByRole("button", { name: "Zapisz benchmark" }).click();
+  await expect(page.getByText("Benchmark został zapisany.")).toBeVisible();
+
+  // Until quotes are fetched there is nothing to compare with.
+  await page.getByRole("link", { name: "Wróć do portfela" }).click();
+  await expect(page.getByText(/Brak notowań benchmarku IDX/)).toBeVisible();
+
+  await page.goto("/instruments");
+  await page.getByRole("button", { name: "Odśwież notowania" }).click();
+  await expect(page.getByText("Notowania zostały odświeżone.")).toBeVisible();
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Otwórz portfel Notowania" }).click();
+  await expect(page.getByRole("heading", { name: "Na tle benchmarku" })).toBeVisible();
+  // The fixture price never changes, so the benchmark's return is exactly zero.
+  await expect(page.getByText(/IDX 0,00%\./)).toBeVisible();
+  await expect(page.getByRole("img", { name: /benchmarku IDX/ })).toBeVisible();
+
+  // Removing the benchmark removes the comparison.
+  await page.getByRole("link", { name: "Ustawienia portfela" }).click();
+  await field(page, "Instrument porównawczy").selectOption({ label: "Bez benchmarku" });
+  await page.getByRole("button", { name: "Zapisz benchmark" }).click();
+  await expect(page.getByText("Benchmark został zapisany.")).toBeVisible();
+  await page.getByRole("link", { name: "Wróć do portfela" }).click();
+  await expect(page.getByRole("heading", { name: "Na tle benchmarku" })).toHaveCount(0);
+});
+
 test("nieznany instrument daje stronę 404", async ({ page }) => {
   await page.goto("/instruments/00000000-0000-4000-8000-000000000000");
 

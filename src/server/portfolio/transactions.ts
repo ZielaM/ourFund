@@ -1,6 +1,7 @@
 import { Decimal } from "@/domain/decimal";
 import { isoDateToUtc, todayInWarsaw, utcToIsoDate, type IsoDate } from "@/domain/portfolio/dates";
 import { cashFlow, computeLedger, LedgerError, type LedgerEntry } from "@/domain/portfolio/ledger";
+import { isTradable } from "@/domain/portfolio/naming";
 import type { TransactionInput } from "@/domain/portfolio/transaction-input";
 import type { Prisma, PrismaClient, TransactionType } from "@/generated/prisma/client";
 import type { SessionUser } from "@/server/auth/sessions";
@@ -54,6 +55,7 @@ export type SaveTransactionResult =
         | "notFound"
         | "accountNotFound"
         | "instrumentNotFound"
+        | "notTradable"
         | "futureDate"
         | "insufficientQuantity";
     };
@@ -142,7 +144,8 @@ type TransactionData = {
 };
 
 type Normalized =
-  { ok: true; data: TransactionData } | { ok: false; reason: "instrumentNotFound" | "futureDate" };
+  | { ok: true; data: TransactionData }
+  | { ok: false; reason: "instrumentNotFound" | "notTradable" | "futureDate" };
 
 /** Fills in defaults that depend on the instrument and turns the input into stored values. */
 async function normalize(db: Db, input: TransactionInput, now: Date): Promise<Normalized> {
@@ -157,6 +160,10 @@ async function normalize(db: Db, input: TransactionInput, now: Date): Promise<No
 
   if (instrumentId && !instrument) {
     return { ok: false, reason: "instrumentNotFound" };
+  }
+  // An index is only a benchmark: there is nothing to buy, sell or receive income from.
+  if (instrument && !isTradable(instrument.type)) {
+    return { ok: false, reason: "notTradable" };
   }
 
   const empty = {

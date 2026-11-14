@@ -12,6 +12,7 @@ import {
   getPortfolio,
   listPortfolios,
   renamePortfolio,
+  setBenchmark,
   updateAccount,
 } from "./portfolios";
 
@@ -115,6 +116,75 @@ describe("portfolios", () => {
       reason: "notFound",
     });
     await expect(deletePortfolio(db, ania, id)).resolves.toEqual({ ok: false, reason: "notFound" });
+  });
+});
+
+describe("benchmark", () => {
+  async function index(): Promise<string> {
+    const created = await db.instrument.create({
+      data: { symbol: "SPX", market: "OTHER", name: "S&P 500", type: "INDEX", currency: "USD" },
+    });
+    return created.id;
+  }
+
+  it("is not set for a new portfolio", async () => {
+    const id = await portfolioOf(ania);
+
+    await expect(getPortfolio(db, ania, id)).resolves.toMatchObject({
+      benchmarkInstrumentId: null,
+    });
+  });
+
+  it("can be chosen and removed", async () => {
+    const id = await portfolioOf(ania);
+    const instrumentId = await index();
+
+    await expect(setBenchmark(db, ania, id, instrumentId)).resolves.toEqual({ ok: true });
+    await expect(getPortfolio(db, ania, id)).resolves.toMatchObject({
+      benchmarkInstrumentId: instrumentId,
+    });
+
+    await expect(setBenchmark(db, ania, id, null)).resolves.toEqual({ ok: true });
+    await expect(getPortfolio(db, ania, id)).resolves.toMatchObject({
+      benchmarkInstrumentId: null,
+    });
+  });
+
+  it.each([UNKNOWN_ID, "not-an-id"])(
+    "refuses an instrument that does not exist (%s)",
+    async (bad) => {
+      const id = await portfolioOf(ania);
+
+      await expect(setBenchmark(db, ania, id, bad)).resolves.toEqual({
+        ok: false,
+        reason: "instrumentNotFound",
+      });
+    },
+  );
+
+  it("cannot be changed on another user's portfolio", async () => {
+    const id = await portfolioOf(ania);
+    const instrumentId = await index();
+
+    await expect(setBenchmark(db, jan, id, instrumentId)).resolves.toEqual({
+      ok: false,
+      reason: "notFound",
+    });
+    await expect(getPortfolio(db, ania, id)).resolves.toMatchObject({
+      benchmarkInstrumentId: null,
+    });
+  });
+
+  it("is cleared when the instrument is removed from the catalogue", async () => {
+    const id = await portfolioOf(ania);
+    const instrumentId = await index();
+    await setBenchmark(db, ania, id, instrumentId);
+
+    await db.instrument.delete({ where: { id: instrumentId } });
+
+    await expect(getPortfolio(db, ania, id)).resolves.toMatchObject({
+      benchmarkInstrumentId: null,
+    });
   });
 });
 
