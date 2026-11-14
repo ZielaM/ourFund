@@ -59,6 +59,30 @@ export type Lot = {
   fxRate: Decimal;
 };
 
+/** Units of one lot sold in one sale. A sale that spans several lots yields several of these. */
+export type Realization = {
+  transactionId: string;
+  date: IsoDate;
+  quantity: Decimal;
+  /** What one unit brought in, in the instrument's currency, after the commission. */
+  unitProceeds: Decimal;
+  /** How the sale was settled. */
+  settlementCurrency: string;
+  fxRate: Decimal;
+  /** The lot the units came from. */
+  lot: Omit<Lot, "quantity">;
+};
+
+/** A dividend or coupon received on a position. */
+export type IncomeEvent = {
+  transactionId: string;
+  date: IsoDate;
+  kind: "DIVIDEND" | "INTEREST";
+  currency: string;
+  gross: Decimal;
+  tax: Decimal;
+};
+
 export type Position = {
   instrumentId: string;
   quantity: Decimal;
@@ -71,6 +95,10 @@ export type Position = {
   realizedGain: Decimal;
   /** Dividends and coupons received after withheld tax, per currency. */
   income: Record<string, Decimal>;
+  /** Every sale, matched to the lots it consumed (oldest first). */
+  realizations: Realization[];
+  /** Every dividend and coupon, in the order received. */
+  incomeEvents: IncomeEvent[];
 };
 
 export type Ledger = {
@@ -100,6 +128,8 @@ type OpenPosition = {
   lots: Lot[];
   realizedGain: Decimal;
   income: Record<string, Decimal>;
+  realizations: Realization[];
+  incomeEvents: IncomeEvent[];
 };
 
 function addTo(balances: Record<string, Decimal>, currency: string, amount: Decimal): void {
@@ -150,7 +180,14 @@ export function computeLedger(entries: readonly LedgerEntry[]): Ledger {
   const positionFor = (instrumentId: string): OpenPosition => {
     let position = open.get(instrumentId);
     if (!position) {
-      position = { instrumentId, lots: [], realizedGain: ZERO, income: {} };
+      position = {
+        instrumentId,
+        lots: [],
+        realizedGain: ZERO,
+        income: {},
+        realizations: [],
+        incomeEvents: [],
+      };
       open.set(instrumentId, position);
     }
     return position;
@@ -186,12 +223,28 @@ export function computeLedger(entries: readonly LedgerEntry[]): Ledger {
 
         let remaining = entry.quantity;
         let costOfSold = ZERO;
+        const unitProceeds = entry.price.minus(entry.fee.div(entry.fxRate).div(entry.quantity));
 
         while (remaining.gt(0)) {
           const lot = position.lots[0];
           const taken = Decimal.min(lot.quantity, remaining);
 
           costOfSold = costOfSold.plus(taken.times(lot.unitCost));
+          position.realizations.push({
+            transactionId: entry.id,
+            date: entry.date,
+            quantity: taken,
+            unitProceeds,
+            settlementCurrency: entry.currency,
+            fxRate: entry.fxRate,
+            lot: {
+              transactionId: lot.transactionId,
+              date: lot.date,
+              unitCost: lot.unitCost,
+              settlementCurrency: lot.settlementCurrency,
+              fxRate: lot.fxRate,
+            },
+          });
           lot.quantity = lot.quantity.minus(taken);
           remaining = remaining.minus(taken);
 
@@ -216,11 +269,16 @@ export function computeLedger(entries: readonly LedgerEntry[]): Ledger {
       case "DIVIDEND":
       case "INTEREST": {
         if (entry.instrumentId) {
-          addTo(
-            positionFor(entry.instrumentId).income,
-            entry.currency,
-            entry.amount.minus(entry.tax),
-          );
+          const position = positionFor(entry.instrumentId);
+          addTo(position.income, entry.currency, entry.amount.minus(entry.tax));
+          position.incomeEvents.push({
+            transactionId: entry.id,
+            date: entry.date,
+            kind: entry.type,
+            currency: entry.currency,
+            gross: entry.amount,
+            tax: entry.tax,
+          });
         }
         break;
       }
@@ -252,6 +310,8 @@ export function computeLedger(entries: readonly LedgerEntry[]): Ledger {
       lots: position.lots,
       realizedGain: position.realizedGain,
       income: position.income,
+      realizations: position.realizations,
+      incomeEvents: position.incomeEvents,
     };
   });
 

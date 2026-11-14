@@ -169,17 +169,39 @@ test("transakcje budują pozycję metodą FIFO i saldo gotówki", async ({ page 
     currency: "PLN",
   });
 
+  // Prices come from the fixture provider (CDR.WA is always 250), so the valuation below does
+  // not depend on whether another test file refreshed the quotes first.
+  await page.goto("/instruments");
+  await page.getByRole("button", { name: "Odśwież notowania" }).click();
+  await expect(page.getByText(/Notowania zostały odświeżone/)).toBeVisible();
+  await page.goto(portfolioUrl);
+
   // 5 units left from the second purchase; the sale consumed the first lot and half of the second.
   const position = holdingsTable(page).getByRole("row", { name: /CDR/ });
   await expect(position.getByRole("cell").nth(1)).toHaveText("5");
-  await expect(position.getByRole("cell").nth(2)).toHaveText("200,00 PLN");
-  await expect(position.getByRole("cell").nth(3)).toHaveText("1 000,00 zł");
-  await expect(position.getByRole("cell").nth(4)).toHaveText("+2 485,00 zł");
-  await expect(position.getByRole("cell").nth(5)).toHaveText("40,50 zł");
+  await expect(position.getByRole("cell").nth(2)).toContainText("250,00 PLN");
+  await expect(position.getByRole("cell").nth(3)).toHaveText("1 250,00 zł");
+  await expect(position.getByRole("cell").nth(4)).toContainText("1 000,00 zł");
+  await expect(position.getByRole("cell").nth(4)).toContainText("średnio 200,00 PLN");
+  await expect(position.getByRole("cell").nth(5)).toContainText("+250,00 zł");
+  await expect(position.getByRole("cell").nth(5)).toContainText("+25,00%");
+  await expect(position.getByRole("cell").nth(6)).toHaveText("40,50 zł");
 
-  // 5000 − 1005 − 2000 + 4490 + 40,50
+  // 5000 − 1005 − 2000 + 4490 + 40,50 in cash, plus 1250 in shares.
   const cash = page.getByRole("table", { name: "Salda gotówkowe" });
   await expect(cash.getByRole("row", { name: /XTB/ })).toContainText("6 525,50 zł");
+  const summary = page.getByRole("region", { name: "Podsumowanie" });
+  await expect(summary).toContainText("7 775,50 zł");
+  await expect(summary).toContainText("Papiery wartościowe 1 250,00 zł, gotówka 6 525,50 zł.");
+  // Unrealized 250 + realized 2485 + dividend 40,50.
+  await expect(summary).toContainText("+2 775,50 zł");
+  await expect(summary).toContainText("Stopa zwrotu (TWR)");
+  await expect(summary).toContainText("Stopa roczna (XIRR)");
+
+  // The chart and the structure of the portfolio are shown.
+  await expect(page.getByRole("img", { name: /Wartość papierów wartościowych/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Struktura portfela" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Klasy aktywów" })).toBeVisible();
 
   const history = page.getByRole("table", { name: "Historia transakcji" });
   await expect(history.getByRole("row")).toHaveCount(6);
@@ -263,9 +285,10 @@ test("zakup w innej walucie pokazuje kurs przewalutowania", async ({ page }) => 
   await page.getByRole("button", { name: "Dodaj transakcję" }).click();
   await expect(page).toHaveURL(portfolioUrl);
 
-  // Cost stays in USD (200 + 8/4); cash left the PLN balance (2 × 100 × 4 + 8).
+  // The cost in PLN is exactly what the account paid: 2 × 100 × 4 + 8.
   const position = holdingsTable(page).getByRole("row", { name: /AAPL/ });
-  await expect(position.getByRole("cell").nth(3)).toHaveText("202,00 USD");
+  await expect(position.getByRole("cell").nth(4)).toContainText("808,00 zł");
+  await expect(position.getByRole("cell").nth(4)).toContainText("średnio 101,00 USD");
   await expect(
     page.getByRole("table", { name: "Salda gotówkowe" }).getByRole("row", { name: /XTB/ }),
   ).toContainText("5 717,50 zł");
@@ -301,7 +324,7 @@ test("edycja i usunięcie transakcji przeliczają pozycję", async ({ page }) =>
   await expect(page).toHaveURL(portfolioUrl);
   const position = holdingsTable(page).getByRole("row", { name: /CDR/ });
   await expect(position.getByRole("cell").nth(1)).toHaveText("20");
-  await expect(position.getByRole("cell").nth(3)).toHaveText("3 005,00 zł");
+  await expect(position.getByRole("cell").nth(4)).toContainText("3 005,00 zł");
 });
 
 test("rachunek z transakcjami nie daje się usunąć, pusty tak", async ({ page }) => {

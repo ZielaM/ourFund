@@ -5,9 +5,13 @@ import { ActionForm } from "@/components/form/action-form";
 import { TextField } from "@/components/form/fields";
 import { SubmitButton } from "@/components/form/submit-button";
 import { PageTitle } from "@/components/layout/page-title";
+import { SignedMoney } from "@/components/portfolio/signed-money";
+import { Decimal } from "@/domain/decimal";
+import { formatDate, formatMoney } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
 import { listPortfolios } from "@/server/portfolio/portfolios";
+import { getPortfolioValuation } from "@/server/valuation/portfolio-valuation";
 import { createPortfolioAction } from "./portfolios/actions";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -17,12 +21,36 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const portfolios = await listPortfolios(getDb(), user);
+  const db = getDb();
+  const portfolios = await listPortfolios(db, user);
+  const valuations = await Promise.all(
+    portfolios.map((portfolio) => getPortfolioValuation(db, user, portfolio.id)),
+  );
   const t = await getTranslations("dashboard");
+
+  const totalValue = valuations.reduce(
+    (sum, valuation) => sum.plus(valuation?.totals.value ?? 0),
+    new Decimal(0),
+  );
+  const incomplete = valuations.some((valuation) => valuation?.totals.incomplete);
+  const valuationDate = valuations.find((valuation) => valuation)?.date;
 
   return (
     <>
       <PageTitle>{t("title")}</PageTitle>
+
+      {portfolios.length > 0 && valuationDate ? (
+        <section aria-label={t("total.label")} className="mt-10 flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">{t("total.label")}</p>
+          <p className="font-display text-5xl font-semibold tracking-tight tabular-nums">
+            {formatMoney(totalValue, "PLN")}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t("total.date", { date: formatDate(valuationDate) })}
+          </p>
+          {incomplete ? <p className="text-sm text-destructive">{t("total.incomplete")}</p> : null}
+        </section>
+      ) : null}
 
       <section aria-labelledby="portfolios-title" className="mt-10 flex flex-col gap-4">
         {portfolios.length === 0 ? (
@@ -38,21 +66,37 @@ export default async function DashboardPage() {
               {t("portfolios.title")}
             </h2>
             <ul className="divide-y rounded-lg border bg-card">
-              {portfolios.map((portfolio) => (
-                <li key={portfolio.id}>
-                  <Link
-                    href={`/portfolios/${portfolio.id}`}
-                    aria-label={t("portfolios.open", { name: portfolio.name })}
-                    className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-4 py-4 transition-colors hover:bg-accent/50"
-                  >
-                    <span className="font-display text-lg font-semibold">{portfolio.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {t("portfolios.accounts", { count: portfolio.accountCount })},{" "}
-                      {t("portfolios.transactions", { count: portfolio.transactionCount })}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {portfolios.map((portfolio, index) => {
+                const totals = valuations[index]?.totals;
+
+                return (
+                  <li key={portfolio.id}>
+                    <Link
+                      href={`/portfolios/${portfolio.id}`}
+                      aria-label={t("portfolios.open", { name: portfolio.name })}
+                      className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 transition-colors hover:bg-accent/50"
+                    >
+                      <span className="flex flex-col gap-0.5">
+                        <span className="font-display text-lg font-semibold">{portfolio.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {t("portfolios.accounts", { count: portfolio.accountCount })},{" "}
+                          {t("portfolios.transactions", { count: portfolio.transactionCount })}
+                        </span>
+                      </span>
+                      {totals ? (
+                        <span className="flex flex-col items-end gap-0.5 tabular-nums">
+                          <span className="text-lg font-medium">
+                            {formatMoney(totals.value, "PLN")}
+                          </span>
+                          <span className="text-sm">
+                            <SignedMoney value={totals.gain} currency="PLN" />
+                          </span>
+                        </span>
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </>
         )}

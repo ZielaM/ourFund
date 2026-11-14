@@ -446,6 +446,104 @@ describe("computeLedger: income", () => {
   });
 });
 
+describe("computeLedger: realizations and income events", () => {
+  it("matches a sale to each lot it consumed, oldest first", () => {
+    const first = buy("2026-01-10", "10", "100", { fee: "5" });
+    const second = buy("2026-02-10", "10", "200");
+    const sale = sell("2026-03-10", "15", "300", { fee: "15" });
+
+    const { realizations } = position([first, second, sale]);
+
+    expect(
+      realizations.map((r) => [
+        r.transactionId,
+        r.lot.transactionId,
+        r.lot.date,
+        fixed(r.quantity),
+        fixed(r.lot.unitCost),
+        fixed(r.unitProceeds),
+      ]),
+    ).toEqual([
+      [sale.id, first.id, "2026-01-10", "10", "100.5", "299"],
+      [sale.id, second.id, "2026-02-10", "5", "200", "299"],
+    ]);
+  });
+
+  it("adds up to the realized gain", () => {
+    const result = position([
+      buy("2026-01-10", "10", "100", { fee: "5" }),
+      buy("2026-02-10", "10", "200"),
+      sell("2026-03-10", "15", "300", { fee: "15" }),
+      sell("2026-04-10", "5", "150"),
+    ]);
+
+    const total = result.realizations.reduce(
+      (sum, r) => sum.plus(r.quantity.times(r.unitProceeds.minus(r.lot.unitCost))),
+      d(0),
+    );
+
+    expect(fixed(total)).toBe(fixed(result.realizedGain));
+  });
+
+  it("keeps how each side was settled", () => {
+    const options = { instrumentId: "AAPL", currency: "PLN", fxRate: "4" };
+    const [realization] = position(
+      [
+        buy("2026-01-10", "2", "100", options),
+        sell("2026-02-10", "2", "150", { ...options, fxRate: "5", fee: "10" }),
+      ],
+      "AAPL",
+    ).realizations;
+
+    expect(realization.settlementCurrency).toBe("PLN");
+    expect(fixed(realization.fxRate)).toBe("5");
+    expect(fixed(realization.unitProceeds)).toBe("149");
+    expect(realization.lot.settlementCurrency).toBe("PLN");
+    expect(fixed(realization.lot.fxRate)).toBe("4");
+  });
+
+  it("uses the split-adjusted cost of the lot", () => {
+    const { realizations } = position([
+      buy("2026-01-10", "10", "100"),
+      { id: id(), type: "SPLIT", date: "2026-02-01", instrumentId: "CDR", splitRatio: d(2) },
+      sell("2026-03-10", "20", "70"),
+    ]);
+
+    expect(fixed(realizations[0].lot.unitCost)).toBe("50");
+    expect(fixed(realizations[0].quantity)).toBe("20");
+  });
+
+  it("lists dividends and coupons with their dates, gross amounts and tax", () => {
+    const dividend: LedgerEntry = {
+      id: id(),
+      type: "DIVIDEND",
+      date: "2026-06-01",
+      instrumentId: "CDR",
+      amount: d("50"),
+      tax: d("9.5"),
+      currency: "PLN",
+    };
+
+    const { incomeEvents } = position([buy("2026-01-10", "10", "100"), dividend]);
+
+    expect(incomeEvents).toHaveLength(1);
+    expect(incomeEvents[0]).toMatchObject({
+      transactionId: dividend.id,
+      date: "2026-06-01",
+      kind: "DIVIDEND",
+      currency: "PLN",
+    });
+    expect([fixed(incomeEvents[0].gross), fixed(incomeEvents[0].tax)]).toEqual(["50", "9.5"]);
+  });
+
+  it("has neither for a position that was only bought", () => {
+    const result = position([buy("2026-01-10", "10", "100")]);
+
+    expect(result.realizations).toEqual([]);
+    expect(result.incomeEvents).toEqual([]);
+  });
+});
+
 describe("cashFlow", () => {
   it("is negative for money leaving the account and positive for money coming in", () => {
     const purchase = cashFlow(buy("2026-01-10", "10", "100", { fee: "5" }));

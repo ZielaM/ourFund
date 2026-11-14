@@ -63,3 +63,47 @@ export function formatDate(isoDate: string): string {
 export function toInputValue(value: Decimal): string {
   return value.toFixed().replace(".", ",");
 }
+
+const percentFormatter = new Intl.NumberFormat(LOCALE, {
+  style: "percent",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** A ratio as a percentage with an explicit sign for gains: 0.1234 becomes "+12,34%". */
+export function formatSignedPercent(ratio: number): string {
+  const text = percentFormatter.format(ratio);
+  return ratio > 0 ? `+${text}` : text;
+}
+
+const shareFormatter = new Intl.NumberFormat(LOCALE, {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** A share of a whole: 0.256 becomes "25,6%". */
+export function formatShare(ratio: number): string {
+  return shareFormatter.format(ratio);
+}
+
+const compactFormatter = new Intl.NumberFormat(LOCALE, {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/** A short amount for chart axes: 12500 becomes "12,5 tys.". */
+export function formatCompact(value: number): string {
+  return compactFormatter.format(value);
+}
+
+const wholeMoneyFormatter = new Intl.NumberFormat(LOCALE, {
+  style: "currency",
+  currency: "PLN",
+  useGrouping: "always",
+});
+
+/** An amount in PLN given as a plain number (chart data), e.g. "1 234,56 zł". */
+export function formatPln(value: number): string {
+  return wholeMoneyFormatter.format(value);
+}

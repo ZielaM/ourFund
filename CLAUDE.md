@@ -49,6 +49,17 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   provider, run `pnpm exec tsx scripts/check-market-data.mts` against the real services.
   stooq.pl is deliberately not used: it puts a browser check in front of automated clients.
 - Prices entered by hand (`source = MANUAL`) are never overwritten by a refresh.
+- Valuation (`src/domain/valuation/`) is in PLN. Cost and results are converted at the rate
+  of each purchase or sale: the broker's rate when the account paid in PLN, otherwise the NBP
+  rate of that day. A value that needs a missing price or rate is `null`, never a guess, and
+  totals carry an `incomplete` flag. Without a market price a position is valued at the price
+  of its last trade and reported in `missing.marketPrices`.
+- Returns (TWR, XIRR) are measured on the securities only: buying is a contribution, selling
+  and dividends are withdrawals. Deposits and withdrawals of cash are ignored on purpose, so
+  results do not depend on whether a user records them. Rates are plain numbers; money is not.
+- Charts follow one rule set: one accent series (`--chart-value`), context in gray
+  (`--chart-context`), hairline grid, a legend, a tooltip listing every series, and a table
+  view of the same data.
 - **Tests come with the code.** Unit tests for all logic; `*.int.test.ts` for repositories and
   services against real PostgreSQL; Playwright for user flows. CI enforces 90% coverage for
   `src/domain` and `src/server`.

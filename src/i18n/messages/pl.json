@@ -60,6 +60,11 @@
       "name": "Nazwa portfela",
       "nameHint": "Na przykład „Główny” albo „Emerytura”.",
       "submit": "Utwórz portfel"
+    },
+    "total": {
+      "label": "Łączna wartość portfeli",
+      "date": "Stan na {date}.",
+      "incomplete": "Część pozycji nie jest wyceniona. Szczegóły są na stronach portfeli."
     }
   },
   "settings": {
@@ -254,17 +259,24 @@
       "closedCaption": "Zamknięte pozycje",
       "instrument": "Instrument",
       "quantity": "Liczba",
-      "averageCost": "Średni koszt",
-      "costBasis": "Koszt nabycia",
-      "realizedGain": "Wynik zrealizowany",
-      "income": "Dywidendy i odsetki"
+      "price": "Kurs",
+      "priceFromTrade": "cena z transakcji",
+      "averageCost": "średnio {price}",
+      "value": "Wartość",
+      "cost": "Koszt",
+      "unrealized": "Wynik",
+      "fxEffect": "w tym waluta",
+      "realized": "Wynik zrealizowany",
+      "income": "Dywidendy i odsetki",
+      "unknown": "brak"
     },
     "cash": {
       "title": "Gotówka",
       "caption": "Salda gotówkowe",
       "account": "Rachunek",
       "balance": "Saldo",
-      "negativeHint": "Ujemne saldo zwykle oznacza, że nie zapisano wpłat na rachunek."
+      "negativeHint": "Ujemne saldo zwykle oznacza, że nie zapisano wpłat na rachunek.",
+      "value": "Wartość w PLN"
     },
     "transactions": {
       "title": "Transakcje",
@@ -307,6 +319,38 @@
       "body": "Usunięcie portfela usuwa także jego rachunki i wszystkie transakcje. Tej operacji nie można cofnąć.",
       "confirm": "Rozumiem, że portfel „{name}” zostanie trwale usunięty razem z transakcjami",
       "submit": "Usuń portfel"
+    },
+    "summary": {
+      "title": "Podsumowanie",
+      "value": "Wartość portfela",
+      "breakdown": "Papiery wartościowe {holdings}, gotówka {cash}. Stan na {date}.",
+      "incomplete": "Wycena jest niepełna: części pozycji nie udało się wycenić i nie ma ich w sumach.",
+      "gain": "Wynik łącznie",
+      "gainParts": "niezrealizowany {unrealized}, zrealizowany {realized}, dywidendy i odsetki {income}",
+      "fxEffect": "W tym zmiana kursów walut",
+      "twr": "Stopa zwrotu (TWR)",
+      "twrHint": "Od {date}, niezależnie od wpłat i wypłat.",
+      "xirr": "Stopa roczna (XIRR)",
+      "xirrHint": "Średniorocznie, z uwzględnieniem dat i kwot zakupów.",
+      "unknown": "brak danych",
+      "missingRates": "Brakuje kursów walut NBP: {currencies}. Odśwież notowania na stronie Instrumenty.",
+      "missingPrices": "Bez notowań rynkowych: {symbols}. Te pozycje są wycenione po cenie ostatniej transakcji.",
+      "refreshLink": "Przejdź do instrumentów"
+    },
+    "chart": {
+      "title": "Wartość inwestycji",
+      "description": "Wartość papierów wartościowych w złotych na tle kosztu ich nabycia, bez gotówki.",
+      "value": "Wartość",
+      "table": "Pokaż dane w tabeli",
+      "date": "Data",
+      "empty": "Wykres pojawi się po dodaniu pierwszej transakcji kupna.",
+      "cost": "Koszt nabycia"
+    },
+    "allocation": {
+      "title": "Struktura portfela",
+      "byClass": "Klasy aktywów",
+      "byCurrency": "Waluty",
+      "byAccount": "Rachunki"
     }
   },
   "transaction": {
@@ -461,5 +505,12 @@
       "delete": "Usuń",
       "deleteLabel": "Usuń kurs z dnia {date}"
     }
+  },
+  "assetClasses": {
+    "STOCK": "Akcje",
+    "ETF": "ETF-y",
+    "BOND": "Obligacje",
+    "CRYPTO": "Kryptowaluty",
+    "CASH": "Gotówka"
   }
 }
