@@ -38,6 +38,7 @@ export async function AppHeader() {
           {t("dashboard")}
         </NavLink>
         <NavLink href="/instruments">{t("instruments")}</NavLink>
+        <NavLink href="/taxes">{t("taxes")}</NavLink>
         {user.role === "ADMIN" ? <NavLink href="/admin/users">{t("users")}</NavLink> : null}
       </nav>
       <div className="ml-auto flex items-center gap-5">

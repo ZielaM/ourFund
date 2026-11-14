@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CURRENCIES, isCurrency } from "./currencies";
-import { isMarket, MARKETS } from "./markets";
+import { isDomesticMarket, isMarket, MARKETS } from "./markets";
 
 describe("currencies", () => {
   it("lists the reporting currency first", () => {
@@ -28,5 +28,9 @@ describe("markets", () => {
 
   it("has no duplicates", () => {
     expect(new Set(MARKETS).size).toBe(MARKETS.length);
+  });
+
+  it("knows which markets are Polish", () => {
+    expect(MARKETS.filter(isDomesticMarket)).toEqual(["GPW", "NEWCONNECT", "CATALYST", "SKARB"]);
   });
 });
