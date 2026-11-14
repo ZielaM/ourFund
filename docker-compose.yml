@@ -6,6 +6,7 @@
 #                      (default "false": the administrator creates accounts)
 #   MARKET_DATA        "live" (default) fetches prices and exchange rates from the internet,
 #                      "off" never does; prices are then entered by hand
+#   OURFUND_VERSION    tag of the image to pull or to give the local build (default "latest")
 #   POSTGRES_PASSWORD  database password (default "ourfund"; letters and digits only,
 #                      because it becomes part of a connection URL)
 name: ourfund
@@ -28,6 +29,9 @@ services:
       retries: 20
 
   app:
+    # Built from this directory by default. To run a published release instead, see
+    # "Gotowy obraz" in the README.
+    image: ghcr.io/zielam/ourfund:${OURFUND_VERSION:-latest}
     build: .
     restart: unless-stopped
     depends_on:
