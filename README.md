@@ -60,6 +60,29 @@ Kwoty w walutach obcych są przeliczane po średnim kursie NBP z ostatniego dnia
 
 To pomoc w wypełnieniu zeznania, a nie porada podatkowa. Kwoty warto porównać z PIT-8C od brokera.
 
+## Kopia zapasowa i eksport danych
+
+Wszystkie dane są w bazie PostgreSQL, w wolumenie `ourfund_db-data`. Kopię całej instancji (wszystkich użytkowników) robi się narzędziami bazy:
+
+```bash
+# kopia do pliku
+docker compose exec -T db pg_dump -U ourfund --format=custom ourfund > ourfund-kopia.dump
+
+# odtworzenie z pliku (zastępuje obecną zawartość bazy)
+docker compose stop app
+docker compose exec -T db pg_restore -U ourfund --dbname=ourfund --clean --if-exists < ourfund-kopia.dump
+docker compose start app
+```
+
+Kopię warto robić regularnie i trzymać poza serwerem, na którym działa aplikacja. Polecenie `docker compose down --volumes` usuwa wolumen razem z danymi.
+
+Każdy użytkownik może też sam pobrać swoje dane w zakładce „Ustawienia”:
+
+- **transakcje jako CSV**: do otwarcia w Excelu lub LibreOffice ustawionych na język polski (średniki, przecinek dziesiętny),
+- **pełną kopię jako JSON**: portfele, rachunki, transakcje oraz użyte instrumenty z warunkami obligacji i kursami wpisanymi ręcznie.
+
+Plik JSON służy do archiwizacji i własnych analiz; aplikacja nie potrafi go jeszcze wczytać z powrotem.
+
 ## Praca nad kodem
 
 Wymagane: Node.js 22, pnpm, Docker.

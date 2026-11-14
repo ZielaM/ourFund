@@ -81,6 +81,11 @@ The UI language is Polish; code, comments, commits and docs for contributors are
 - The dividends page (`src/domain/income/`, `/dividends`) is also per user and includes every
   account type. It shows net amounts converted at the NBP rate of the payment day, like the
   valuation, so its figures differ on purpose from the gross amounts of the tax report.
+- Data export (`src/server/export/`, `/api/export/*`): route handlers check the session
+  themselves and answer 401 without one. The JSON document identifies instruments by symbol
+  and market, never by database id, and carries a `version`; bump `EXPORT_VERSION` when its
+  shape changes. Text cells of the CSV go through `csvText` (formula injection), numbers
+  through `csvNumber`.
 - Charts follow one rule set: one accent series (`--chart-value`), context in gray
   (`--chart-context`), hairline grid, a legend, a tooltip listing every series, and a table
   view of the same data. A chart with a single series (`MonthBars`) is named by its caption

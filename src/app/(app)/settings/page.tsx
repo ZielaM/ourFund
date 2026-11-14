@@ -14,6 +14,7 @@ export default async function SettingsPage() {
   const user = await requireUser();
   const t = await getTranslations("settings");
   const tRoles = await getTranslations("roles");
+  const tExport = await getTranslations("export");
 
   return (
     <>
@@ -43,6 +44,38 @@ export default async function SettingsPage() {
           submitLabel={t("password.submit")}
           askForCurrentPassword
         />
+      </section>
+
+      <section aria-labelledby="export-title" className="mt-12 flex max-w-prose flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 id="export-title" className="text-xl font-semibold">
+            {tExport("title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{tExport("intro")}</p>
+        </div>
+        <ul className="flex flex-col gap-4 text-sm">
+          <li className="flex flex-col gap-1">
+            {/* A plain link: the browser saves the response as a file instead of navigating. */}
+            <a
+              href="/api/export/transactions"
+              download
+              className="w-fit font-medium underline underline-offset-4"
+            >
+              {tExport("transactions")}
+            </a>
+            <span className="text-muted-foreground">{tExport("transactionsHint")}</span>
+          </li>
+          <li className="flex flex-col gap-1">
+            <a
+              href="/api/export/data"
+              download
+              className="w-fit font-medium underline underline-offset-4"
+            >
+              {tExport("data")}
+            </a>
+            <span className="text-muted-foreground">{tExport("dataHint")}</span>
+          </li>
+        </ul>
       </section>
     </>
   );
