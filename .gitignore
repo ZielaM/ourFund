@@ -36,3 +36,6 @@ src/generated/
 
 # playwright signed-in browser state
 e2e/.auth/
+
+# real account data used while developing importers; never committed
+/private/
