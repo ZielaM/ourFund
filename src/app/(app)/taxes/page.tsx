@@ -1,9 +1,9 @@
-import { cn } from "cn";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DataTable } from "@/components/layout/data-table";
 import { PageTitle } from "@/components/layout/page-title";
+import { YearNav } from "@/components/layout/year-nav";
 import { SignedMoney } from "@/components/portfolio/signed-money";
 import { IncomeTable } from "@/components/tax/income-table";
 import { SalesTable } from "@/components/tax/sales-table";
@@ -62,24 +62,13 @@ export default async function TaxesPage({ searchParams }: PageProps<"/taxes">) {
       ) : (
         <>
           <div className="mt-8 flex flex-col gap-4">
-            <nav aria-label={t("years")} className="flex flex-wrap gap-1.5">
-              {view.years.map((candidate) => (
-                <Link
-                  key={candidate}
-                  href={{ pathname: "/taxes", query: { year: candidate } }}
-                  aria-current={candidate === year ? "page" : undefined}
-                  aria-label={t("yearLabel", { year: candidate })}
-                  className={cn(
-                    "rounded-md border px-3 py-1.5 text-sm font-medium tabular-nums transition-colors",
-                    candidate === year
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "bg-card text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {candidate}
-                </Link>
-              ))}
-            </nav>
+            <YearNav
+              pathname="/taxes"
+              years={view.years}
+              current={year}
+              label={t("years")}
+              yearLabel={(candidate) => t("yearLabel", { year: candidate })}
+            />
             <h2 className="font-display text-2xl font-semibold tracking-tight">
               {t("heading", { year })}
             </h2>

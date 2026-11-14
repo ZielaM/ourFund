@@ -78,9 +78,13 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   treasury bonds and payments from Polish payers stay outside the return. Tax bases and taxes
   are rounded to full złoty. Texts must not promise more than the code does: it is an aid,
   not tax advice.
+- The dividends page (`src/domain/income/`, `/dividends`) is also per user and includes every
+  account type. It shows net amounts converted at the NBP rate of the payment day, like the
+  valuation, so its figures differ on purpose from the gross amounts of the tax report.
 - Charts follow one rule set: one accent series (`--chart-value`), context in gray
   (`--chart-context`), hairline grid, a legend, a tooltip listing every series, and a table
-  view of the same data.
+  view of the same data. A chart with a single series (`MonthBars`) is named by its caption
+  and has no legend.
 - **Tests come with the code.** Unit tests for all logic; `*.int.test.ts` for repositories and
   services against real PostgreSQL; Playwright for user flows. CI enforces 90% coverage for
   `src/domain` and `src/server`.
