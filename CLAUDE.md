@@ -86,6 +86,10 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   and market, never by database id, and carries a `version`; bump `EXPORT_VERSION` when its
   shape changes. Text cells of the CSV go through `csvText` (formula injection), numbers
   through `csvNumber`.
+- Colours come only from the tokens in `src/app/globals.css`, which has a light and a dark set
+  switched by `prefers-color-scheme`; never hard-code a colour in a component. The dark chart
+  colours were checked with the data-viz palette validator against the dark card surface.
+- `README.md` (Polish) and `README.en.md` describe the same things; change both together.
 - Charts follow one rule set: one accent series (`--chart-value`), context in gray
   (`--chart-context`), hairline grid, a legend, a tooltip listing every series, and a table
   view of the same data. A chart with a single series (`MonthBars`) is named by its caption

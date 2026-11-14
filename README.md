@@ -4,13 +4,16 @@
 
 Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamiany u siebie w Dockerze.
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji historia dywidend i odsetek oraz zestawienie do PIT-38. Import z brokerów powstaje w kolejnym etapie.
+[English version](README.en.md)
+
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji, historia dywidend i odsetek, zestawienie do PIT-38 oraz eksport danych. Import z brokerów powstaje w kolejnym etapie.
 
 ## Założenia
 
 - Aplikacja webowa (Next.js + TypeScript) z bazą PostgreSQL, uruchamiana przez `docker compose`.
 - Tylko konta lokalne — dane zostają na Twoim serwerze. Nie ma odzyskiwania hasła e-mailem: nowe hasło nadaje administrator.
 - Polskie realia: GPW, detaliczne obligacje skarbowe, rachunki IKE / IKZE / OKI, PIT-38.
+- Interfejs jest po polsku i ma jasny oraz ciemny wygląd, wybierany według ustawień systemu.
 
 ## Uruchomienie
 
