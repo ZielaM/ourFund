@@ -9,6 +9,7 @@
     "main": "Nawigacja główna",
     "dashboard": "Pulpit",
     "instruments": "Instrumenty",
+    "dividends": "Dywidendy",
     "taxes": "Podatki",
     "users": "Użytkownicy",
     "settings": "Ustawienia",
@@ -673,6 +674,51 @@
       "accountsBody": "Transakcje na tych rachunkach nie wchodzą do zestawienia: {accounts}.",
       "accountEntry": "{name} ({type}, portfel {portfolio})",
       "oki": "Dochody na OKI nie podlegają podatkowi dochodowemu. Od 2027 roku rozlicza się za nie osobny podatek od wartości aktywów ponad kwotę wolną, w e-Urzędzie Skarbowym, na podstawie informacji od instytucji prowadzącej konto."
+    }
+  },
+  "income": {
+    "title": "Dywidendy",
+    "years": "Lata",
+    "yearLabel": "Rok {year}",
+    "empty": {
+      "title": "Nie ma jeszcze żadnej wypłaty",
+      "body": "Dywidendy i odsetki pojawią się tutaj, gdy zapiszesz je jako transakcje na dowolnym rachunku."
+    },
+    "summary": {
+      "title": "Podsumowanie",
+      "received": "Otrzymane w {year} roku",
+      "hint": "Dywidendy i odsetki ze wszystkich rachunków, po potrąceniu podatku, przeliczone na złote po kursie NBP z dnia wypłaty. Od pierwszej wypłaty: {allTime}."
+    },
+    "unknown": "brak kursu",
+    "missingRates": "Brakuje kursów NBP dla: {currencies}. Wypłat w tych walutach nie da się przeliczyć na złote.",
+    "refreshLink": "Przejdź do instrumentów, aby pobrać kursy",
+    "nothing": "W {year} roku nie było żadnej wypłaty.",
+    "net": "Kwota netto",
+    "source": "Od kogo",
+    "cashInterest": "Odsetki od gotówki",
+    "months": {
+      "title": "Miesiąc po miesiącu",
+      "description": "Dywidendy i odsetki netto w złotych w kolejnych miesiącach {year} roku.",
+      "month": "Miesiąc",
+      "table": "Pokaż dane w tabeli"
+    },
+    "sources": {
+      "title": "Według instrumentów",
+      "caption": "Wypłaty w {year} roku według instrumentów",
+      "count": "Wypłaty"
+    },
+    "payments": {
+      "title": "Wypłaty",
+      "caption": "Wypłaty w {year} roku",
+      "date": "Data",
+      "account": "Rachunek",
+      "gross": "Brutto",
+      "tax": "Podatek"
+    },
+    "byYear": {
+      "title": "Rok po roku",
+      "caption": "Dywidendy i odsetki netto w kolejnych latach",
+      "year": "Rok"
     }
   }
 }
