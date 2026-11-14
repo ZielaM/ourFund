@@ -720,5 +720,33 @@
       "caption": "Dywidendy i odsetki netto w kolejnych latach",
       "year": "Rok"
     }
+  },
+  "export": {
+    "title": "Eksport danych",
+    "intro": "Twoje dane należą do Ciebie. Możesz je w każdej chwili pobrać: transakcje do arkusza kalkulacyjnego albo pełną kopię wszystkiego, co wpisano na tym koncie.",
+    "transactions": "Pobierz transakcje (CSV)",
+    "transactionsHint": "Wszystkie transakcje ze wszystkich portfeli, w formacie dla Excela i LibreOffice ustawionych na język polski.",
+    "data": "Pobierz pełną kopię (JSON)",
+    "dataHint": "Portfele, rachunki, transakcje oraz instrumenty wraz z warunkami obligacji i kursami wpisanymi ręcznie.",
+    "dataFileName": "dane",
+    "columns": {
+      "fileName": "transakcje",
+      "date": "Data",
+      "portfolio": "Portfel",
+      "account": "Rachunek",
+      "type": "Typ",
+      "symbol": "Symbol",
+      "market": "Rynek",
+      "name": "Nazwa",
+      "quantity": "Liczba",
+      "price": "Cena",
+      "currency": "Waluta rozliczenia",
+      "fxRate": "Kurs waluty",
+      "amount": "Kwota",
+      "fee": "Prowizja",
+      "tax": "Podatek u źródła",
+      "splitRatio": "Stosunek splitu",
+      "note": "Notatka"
+    }
   }
 }
