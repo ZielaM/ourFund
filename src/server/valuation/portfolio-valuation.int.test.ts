@@ -121,7 +121,7 @@ describe("getPortfolioValuation", () => {
       cash: [],
       allocation: { byClass: [], byCurrency: [], byAccount: [] },
       performance: { twr: null, xirr: null, since: null, chart: [], benchmark: null },
-      missing: { marketPrices: [], rates: [] },
+      missing: { marketPrices: [], rates: [], bondRates: [] },
     });
     expect(fixed(valuation?.totals.value)).toBe("0");
     expect(valuation?.totals.incomplete).toBe(false);

@@ -17,10 +17,20 @@ export type PricePoint = {
   close: Decimal;
   /** True when no market price is known and the price of the last trade stands in for it. */
   fromTrade: boolean;
+  /** True when the price rests on an assumption, e.g. a bond rate not announced yet. */
+  estimated?: boolean;
 };
 
-/** The price of an instrument on a day, in its own currency, or null when none is known. */
-export type PriceOn = (instrumentId: string, date: IsoDate) => PricePoint | null;
+/**
+ * The price of an instrument on a day, in its own currency, or null when none is known.
+ * `acquiredOn` is the day the units were bought: most instruments have one price for
+ * everybody, but a retail treasury bond is worth what it has accrued since its purchase.
+ */
+export type PriceOn = (
+  instrumentId: string,
+  date: IsoDate,
+  acquiredOn?: IsoDate,
+) => PricePoint | null;
 
 type Settlement = {
   date: IsoDate;
@@ -82,6 +92,25 @@ export type PositionValuation = {
   income: Decimal | null;
 };
 
+/**
+ * One price to show for a position. Lots normally share it; when they do not (bonds bought
+ * on different days), it is their average weighted by quantity.
+ */
+function positionPrice(lots: { lot: { quantity: Decimal }; price: PricePoint }[]): PricePoint {
+  const first = lots[0].price;
+  const estimated = lots.some(({ price }) => price.estimated) || undefined;
+  const fromTrade = lots.some(({ price }) => price.fromTrade);
+
+  if (lots.every(({ price }) => price.close.eq(first.close))) {
+    return { ...first, fromTrade, estimated };
+  }
+
+  const quantity = Decimal.sum(ZERO, ...lots.map(({ lot }) => lot.quantity));
+  const total = Decimal.sum(ZERO, ...lots.map(({ lot, price }) => lot.quantity.times(price.close)));
+
+  return { date: first.date, close: total.div(quantity), fromTrade, estimated };
+}
+
 export function valuePosition(
   position: Position,
   instrumentCurrency: string,
@@ -89,10 +118,10 @@ export function valuePosition(
   priceOn: PriceOn,
   fxOn: FxOn,
 ): PositionValuation {
-  const price = position.quantity.isZero() ? null : priceOn(position.instrumentId, date);
   const rateNow = currentRate(instrumentCurrency, date, fxOn);
   const lots = position.lots.map((lot) => ({
     lot,
+    price: priceOn(position.instrumentId, date, lot.date),
     rateAtPurchase: rateToPln(lot, instrumentCurrency, fxOn),
   }));
 
@@ -103,15 +132,24 @@ export function valuePosition(
   );
 
   const held = !position.quantity.isZero();
-  const known = !held || (price !== null && rateNow !== null);
+  const priced = lots.every(({ price }) => price !== null);
+  const known = !held || (priced && rateNow !== null);
 
-  const value = !held ? ZERO : known ? position.quantity.times(price!.close).times(rateNow!) : null;
+  const value = !held
+    ? ZERO
+    : known
+      ? Decimal.sum(
+          ZERO,
+          ...lots.map(({ lot, price }) => lot.quantity.times(price!.close).times(rateNow!)),
+        )
+      : null;
 
   const priceEffect = !held
     ? ZERO
     : known
-      ? sumOrNull(
-          lots.map(({ lot }) =>
+      ? Decimal.sum(
+          ZERO,
+          ...lots.map(({ lot, price }) =>
             lot.quantity.times(price!.close.minus(lot.unitCost)).times(rateNow!),
           ),
         )
@@ -128,6 +166,9 @@ export function valuePosition(
           ),
         )
       : null;
+
+  const price =
+    held && priced ? positionPrice(lots.map(({ lot, price }) => ({ lot, price: price! }))) : null;
 
   const realized = sumOrNull(
     position.realizations.map((realization) => {

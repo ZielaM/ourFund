@@ -18,6 +18,8 @@ const YAHOO_SUFFIX: Record<Market, string | null> = {
   EURONEXT: null,
   CATALYST: null,
   OTHER: null,
+  // Retail treasury bonds are not quoted at all.
+  SKARB: null,
   // Crypto is quoted as a pair, handled below.
   CRYPTO: null,
 };

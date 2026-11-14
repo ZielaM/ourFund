@@ -1,3 +1,4 @@
+import { bondValue, type BondSeries } from "@/domain/bonds/valuation";
 import { Decimal } from "@/domain/decimal";
 import type { IsoDate } from "@/domain/portfolio/dates";
 import { computeLedger, type LedgerEntry } from "@/domain/portfolio/ledger";
@@ -26,113 +27,86 @@ export function dailyDates(from: IsoDate, to: IsoDate): IsoDate[] {
   return dates;
 }
 
-/** Units of each instrument held at the end of a day, across all accounts. */
-export type QuantitySnapshot = {
+/** Units bought together and still held at the end of a day. */
+export type HeldLot = {
+  instrumentId: string;
+  /** The day the units were bought. */
+  acquiredOn: IsoDate;
+  quantity: Decimal;
+  /** Cost of one unit in the instrument's currency. */
+  unitCost: Decimal;
+  settlementCurrency: string;
+  fxRate: Decimal;
+};
+
+export type LotSnapshot = {
   date: IsoDate;
-  quantities: Map<string, Decimal>;
+  lots: HeldLot[];
 };
 
 /**
- * Replays the trades and splits of every account and records what was held after each day
- * on which something changed. Splits are applied per account, as they are recorded.
+ * What was held (FIFO lots, per account) after each day on which a trade or a split
+ * happened. Between two snapshots the holdings do not change.
  */
-export function buildQuantityTimeline(
+export function buildLotTimeline(
   entriesByAccount: readonly (readonly LedgerEntry[])[],
-): QuantitySnapshot[] {
-  const tagged = entriesByAccount
-    .flatMap((entries, account) => entries.map((entry, index) => ({ entry, account, index })))
-    .sort(
-      (a, b) =>
-        a.entry.date.localeCompare(b.entry.date) || a.account - b.account || a.index - b.index,
-    );
-
-  // Keyed by account and instrument.
-  const held = new Map<string, { instrumentId: string; quantity: Decimal }>();
-  const snapshots: QuantitySnapshot[] = [];
-
-  const snapshot = (date: IsoDate) => {
-    const quantities = new Map<string, Decimal>();
-    for (const { instrumentId, quantity } of held.values()) {
-      if (!quantity.isZero()) {
-        quantities.set(instrumentId, (quantities.get(instrumentId) ?? ZERO).plus(quantity));
-      }
-    }
-    snapshots.push({ date, quantities });
-  };
-
-  tagged.forEach(({ entry, account }, position) => {
-    if (entry.type === "BUY" || entry.type === "SELL" || entry.type === "SPLIT") {
-      const key = `${account}|${entry.instrumentId}`;
-      const current = held.get(key)?.quantity ?? ZERO;
-      let quantity: Decimal;
-
-      if (entry.type === "SPLIT") {
-        quantity = current.times(entry.splitRatio);
-      } else if (entry.type === "BUY") {
-        quantity = current.plus(entry.quantity);
-      } else {
-        quantity = current.minus(entry.quantity);
-      }
-
-      held.set(key, { instrumentId: entry.instrumentId, quantity });
-    }
-
-    const next = tagged[position + 1];
-    if (!next || next.entry.date !== entry.date) {
-      snapshot(entry.date);
-    }
-  });
-
-  return snapshots;
-}
-
-export type CostSnapshot = {
-  date: IsoDate;
-  /** What the securities held at the end of the day cost, in PLN; null without a rate. */
-  cost: Decimal | null;
-};
-
-/**
- * The cost of the securities held (FIFO, per account) after each day on which a trade or
- * a split happened. Between two snapshots the cost does not change.
- */
-export function buildCostTimeline(
-  entriesByAccount: readonly (readonly LedgerEntry[])[],
-  instrumentCurrency: (instrumentId: string) => string,
-  fxOn: FxOn,
-): CostSnapshot[] {
+): LotSnapshot[] {
   const changesHoldings = (entry: LedgerEntry) =>
     entry.type === "BUY" || entry.type === "SELL" || entry.type === "SPLIT";
   const dates = [
     ...new Set(
-      entriesByAccount
-        .flatMap((entries) => entries.filter(changesHoldings))
-        .map((entry) => entry.date),
+      entriesByAccount.flatMap((entries) =>
+        entries.filter(changesHoldings).map((entry) => entry.date),
+      ),
     ),
   ].sort();
 
   return dates.map((date) => ({
     date,
-    cost: sumOrNull(
-      entriesByAccount.flatMap((entries) =>
-        computeLedger(entries.filter((entry) => entry.date <= date)).positions.flatMap((position) =>
-          position.lots.map((lot) => {
-            const rate = rateToPln(lot, instrumentCurrency(position.instrumentId), fxOn);
-            return rate ? lot.quantity.times(lot.unitCost).times(rate) : null;
-          }),
-        ),
+    lots: entriesByAccount.flatMap((entries) =>
+      computeLedger(entries.filter((entry) => entry.date <= date)).positions.flatMap((position) =>
+        position.lots.map((lot) => ({
+          instrumentId: position.instrumentId,
+          acquiredOn: lot.date,
+          quantity: lot.quantity,
+          unitCost: lot.unitCost,
+          settlementCurrency: lot.settlementCurrency,
+          fxRate: lot.fxRate,
+        })),
       ),
     ),
   }));
 }
 
+/** What the lots of a snapshot cost in PLN; null when an exchange rate is missing. */
+export function costOfLots(
+  lots: readonly HeldLot[],
+  instrumentCurrency: (instrumentId: string) => string,
+  fxOn: FxOn,
+): Decimal | null {
+  return sumOrNull(
+    lots.map((lot) => {
+      const rate = rateToPln(
+        { date: lot.acquiredOn, settlementCurrency: lot.settlementCurrency, fxRate: lot.fxRate },
+        instrumentCurrency(lot.instrumentId),
+        fxOn,
+      );
+      return rate ? lot.quantity.times(lot.unitCost).times(rate) : null;
+    }),
+  );
+}
+
 /**
- * A price lookup that prefers market prices and falls back to the price of the most recent
- * trade, so that a position is never left without a value just because quotes are missing.
+ * A price lookup. In order of preference:
+ * - a retail treasury bond is worth what it has accrued since the day it was bought,
+ * - otherwise the market price, carried forward over days without one,
+ * - otherwise the price of the most recent trade, so that a position is never left without
+ *   a value just because quotes are missing.
  */
 export function createPriceLookup(
   marketPrices: ReadonlyMap<string, readonly { date: IsoDate; close: Decimal }[]>,
   entries: readonly LedgerEntry[],
+  bonds: ReadonlyMap<string, BondSeries> = new Map(),
 ): PriceOn {
   const tradePrices = new Map<string, { date: IsoDate; value: Decimal }[]>();
   for (const entry of entries) {
@@ -154,7 +128,13 @@ export function createPriceLookup(
     [...tradePrices].map(([instrumentId, prices]) => [instrumentId, createLookup(prices)]),
   );
 
-  return (instrumentId, date): PricePoint | null => {
+  return (instrumentId, date, acquiredOn): PricePoint | null => {
+    const bond = bonds.get(instrumentId);
+    if (bond && acquiredOn) {
+      const { value, ratesKnown } = bondValue(bond, acquiredOn, date);
+      return { date, close: value, fromTrade: false, estimated: !ratesKnown || undefined };
+    }
+
     const quoted = market.get(instrumentId)?.(date);
     if (quoted) {
       return { date: quoted.date, close: quoted.value, fromTrade: false };
@@ -173,7 +153,7 @@ export type ValuePoint = {
 
 /** The market value of the securities (cash excluded) on each of the given days. */
 export function valueSeries(
-  timeline: readonly QuantitySnapshot[],
+  timeline: readonly LotSnapshot[],
   dates: readonly IsoDate[],
   instrumentCurrency: (instrumentId: string) => string,
   priceOn: PriceOn,
@@ -187,16 +167,16 @@ export function valueSeries(
     }
 
     let value: Decimal | null = ZERO;
-    for (const [instrumentId, quantity] of index >= 0 ? timeline[index].quantities : []) {
-      const currency = instrumentCurrency(instrumentId);
-      const price = priceOn(instrumentId, date);
+    for (const lot of index >= 0 ? timeline[index].lots : []) {
+      const currency = instrumentCurrency(lot.instrumentId);
+      const price = priceOn(lot.instrumentId, date, lot.acquiredOn);
       const rate = currency === REPORTING_CURRENCY ? new Decimal(1) : fxOn(currency, date);
 
       if (!price || !rate) {
         value = null;
         break;
       }
-      value = value.plus(quantity.times(price.close).times(rate));
+      value = value.plus(lot.quantity.times(price.close).times(rate));
     }
 
     return { date, value: value?.toNumber() ?? null };

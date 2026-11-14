@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CURRENCIES } from "@/domain/portfolio/currencies";
-import { MARKETS, type Market } from "@/domain/portfolio/markets";
+import { LISTED_MARKETS, type Market } from "@/domain/portfolio/markets";
 import { INSTRUMENT_TYPES } from "@/domain/portfolio/naming";
 import { formatDate, formatPrice } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
@@ -25,7 +25,7 @@ import { getEnv } from "@/server/env";
 import { getLatestPrices } from "@/server/market-data/prices";
 import { getLastRefresh } from "@/server/market-data/refresh";
 import { listInstruments } from "@/server/portfolio/instruments";
-import { createInstrumentAction, refreshMarketDataAction } from "./actions";
+import { createBondAction, createInstrumentAction, refreshMarketDataAction } from "./actions";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("instruments");
@@ -48,6 +48,7 @@ export default async function InstrumentsPage() {
     getFormatter(),
   ]);
   const marketDataOff = getEnv().MARKET_DATA === "off";
+  const tBonds = await getTranslations("bonds");
 
   return (
     <>
@@ -191,7 +192,7 @@ export default async function InstrumentsPage() {
             ))}
           </SelectField>
           <SelectField name="market" label={t("create.market")} defaultValue="GPW">
-            {MARKETS.map((market) => (
+            {LISTED_MARKETS.map((market) => (
               <option key={market} value={market}>
                 {tMarkets(market)}
               </option>
@@ -205,6 +206,42 @@ export default async function InstrumentsPage() {
             ))}
           </SelectField>
           <SubmitButton className="self-start">{t("create.submit")}</SubmitButton>
+        </ActionForm>
+      </section>
+
+      <section aria-labelledby="bonds-title" className="mt-12 flex max-w-sm flex-col gap-5">
+        <div className="flex max-w-prose flex-col gap-1">
+          <h2 id="bonds-title" className="text-xl font-semibold">
+            {tBonds("create.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{tBonds("intro")}</p>
+        </div>
+        <ActionForm action={createBondAction}>
+          <TextField
+            name="series"
+            label={tBonds("create.series")}
+            hint={tBonds("create.seriesHint")}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            required
+          />
+          <TextField
+            name="firstRate"
+            label={tBonds("create.firstRate")}
+            hint={tBonds("create.firstRateHint")}
+            inputMode="decimal"
+            autoComplete="off"
+            required
+          />
+          <TextField
+            name="margin"
+            label={tBonds("create.margin")}
+            hint={tBonds("create.marginHint")}
+            inputMode="decimal"
+            autoComplete="off"
+          />
+          <SubmitButton className="self-start">{tBonds("create.submit")}</SubmitButton>
         </ActionForm>
       </section>
     </>

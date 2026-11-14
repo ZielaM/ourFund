@@ -10,6 +10,7 @@ import {
   type TransactionFormValues,
 } from "@/components/portfolio/transaction-fields";
 import { CURRENCIES } from "@/domain/portfolio/currencies";
+import { TREASURY_MARKET } from "@/domain/portfolio/markets";
 import { isTradable } from "@/domain/portfolio/naming";
 import { toInputValue } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
@@ -63,7 +64,12 @@ export default async function EditTransactionPage({
     notFound();
   }
 
-  const instruments = (await listInstruments(db)).filter(({ type }) => isTradable(type));
+  const instruments = (await listInstruments(db))
+    .filter(({ type }) => isTradable(type))
+    .map((instrument) => ({
+      ...instrument,
+      treasuryBond: instrument.market === TREASURY_MARKET,
+    }));
   const t = await getTranslations("transaction");
   const portfolioHref = `/portfolios/${portfolio.id}`;
 

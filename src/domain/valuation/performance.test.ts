@@ -3,9 +3,9 @@ import { Decimal } from "@/domain/decimal";
 import type { LedgerEntry } from "@/domain/portfolio/ledger";
 import {
   benchmarkLevels,
-  buildCostTimeline,
-  buildQuantityTimeline,
+  buildLotTimeline,
   contributions,
+  costOfLots,
   createPriceLookup,
   cumulativeReturns,
   dailyDates,
@@ -54,8 +54,10 @@ const usdAt =
   (currency) =>
     currency === "USD" ? d(rate) : null;
 
-const quantities = (snapshot: { quantities: Map<string, Decimal> }) =>
-  Object.fromEntries([...snapshot.quantities].map(([id, quantity]) => [id, quantity.toFixed()]));
+/** Units held per instrument in a snapshot, with the purchase day of each lot. */
+const held = (snapshot: {
+  lots: { instrumentId: string; acquiredOn: string; quantity: Decimal }[];
+}) => snapshot.lots.map((lot) => [lot.instrumentId, lot.acquiredOn, lot.quantity.toFixed()]);
 
 describe("dailyDates", () => {
   it("lists every day of the range, both ends included", () => {
@@ -76,146 +78,60 @@ describe("dailyDates", () => {
   });
 });
 
-describe("buildQuantityTimeline", () => {
-  it("records the holdings after each day with a change", () => {
-    const timeline = buildQuantityTimeline([
+describe("buildLotTimeline", () => {
+  it("records the lots held after each day with a trade", () => {
+    const timeline = buildLotTimeline([
       [
         trade("BUY", "2026-01-10", "10", "100"),
-        trade("BUY", "2026-01-10", "5", "100"),
-        trade("SELL", "2026-02-10", "4", "120"),
+        trade("BUY", "2026-02-10", "5", "200"),
+        trade("SELL", "2026-03-10", "12", "300"),
       ],
     ]);
 
-    expect(timeline.map((snapshot) => [snapshot.date, quantities(snapshot)])).toEqual([
-      ["2026-01-10", { CDR: "15" }],
-      ["2026-02-10", { CDR: "11" }],
+    expect(timeline.map((snapshot) => [snapshot.date, held(snapshot)])).toEqual([
+      ["2026-01-10", [["CDR", "2026-01-10", "10"]]],
+      [
+        "2026-02-10",
+        [
+          ["CDR", "2026-01-10", "10"],
+          ["CDR", "2026-02-10", "5"],
+        ],
+      ],
+      // The sale used up the first lot and two units of the second.
+      ["2026-03-10", [["CDR", "2026-02-10", "3"]]],
     ]);
   });
 
-  it("adds up the same instrument across accounts", () => {
-    const timeline = buildQuantityTimeline([
+  it("keeps the lots of each account, each with its own FIFO", () => {
+    const timeline = buildLotTimeline([
       [trade("BUY", "2026-01-10", "10", "100")],
-      [trade("BUY", "2026-01-20", "3", "100")],
+      [trade("BUY", "2026-01-20", "3", "100"), trade("SELL", "2026-02-10", "1", "120")],
     ]);
 
-    expect(quantities(timeline.at(-1)!)).toEqual({ CDR: "13" });
+    expect(held(timeline.at(-1)!)).toEqual([
+      ["CDR", "2026-01-10", "10"],
+      ["CDR", "2026-01-20", "2"],
+    ]);
   });
 
   it("applies a split only to the account it was recorded on", () => {
-    const timeline = buildQuantityTimeline([
+    const timeline = buildLotTimeline([
       [trade("BUY", "2026-01-10", "10", "100"), split("2026-02-01", "2")],
       [trade("BUY", "2026-01-10", "3", "100")],
     ]);
 
-    expect(quantities(timeline.at(-1)!)).toEqual({ CDR: "23" });
-  });
-
-  it("drops an instrument once it is sold out", () => {
-    const timeline = buildQuantityTimeline([
-      [
-        trade("BUY", "2026-01-10", "10", "100"),
-        trade("BUY", "2026-01-10", "1", "50", { instrumentId: "PKN" }),
-        trade("SELL", "2026-02-10", "10", "120"),
-      ],
-    ]);
-
-    expect(quantities(timeline.at(-1)!)).toEqual({ PKN: "1" });
-  });
-
-  it("ignores entries that do not change holdings, but not their dates", () => {
-    const deposit: LedgerEntry = {
-      id: "dep",
-      type: "DEPOSIT",
-      date: "2026-01-02",
-      amount: d(1000),
-      currency: "PLN",
-    };
-
-    const timeline = buildQuantityTimeline([[deposit, trade("BUY", "2026-01-10", "10", "100")]]);
-
-    expect(timeline.map((snapshot) => [snapshot.date, quantities(snapshot)])).toEqual([
-      ["2026-01-02", {}],
-      ["2026-01-10", { CDR: "10" }],
+    expect(held(timeline.at(-1)!)).toEqual([
+      ["CDR", "2026-01-10", "20"],
+      ["CDR", "2026-01-10", "3"],
     ]);
   });
 
-  it("is empty without entries", () => {
-    expect(buildQuantityTimeline([])).toEqual([]);
-  });
-});
-
-describe("buildCostTimeline", () => {
-  const plnOnly = () => "PLN";
-  const costs = (snapshots: { date: string; cost: Decimal | null }[]) =>
-    snapshots.map((snapshot) => [snapshot.date, snapshot.cost?.toFixed() ?? null]);
-
-  it("records the cost of what is held after each trading day", () => {
-    const timeline = buildCostTimeline(
-      [
-        [
-          trade("BUY", "2026-01-10", "10", "100", { fee: "5" }),
-          trade("BUY", "2026-02-10", "10", "200"),
-          trade("SELL", "2026-03-10", "15", "300"),
-        ],
-      ],
-      plnOnly,
-      noFx,
-    );
-
-    // The sale removes the whole first lot (1005) and half of the second (1000).
-    expect(costs(timeline)).toEqual([
-      ["2026-01-10", "1005"],
-      ["2026-02-10", "3005"],
-      ["2026-03-10", "1000"],
+  it("has no lots once everything is sold", () => {
+    const timeline = buildLotTimeline([
+      [trade("BUY", "2026-01-10", "10", "100"), trade("SELL", "2026-02-10", "10", "120")],
     ]);
-  });
 
-  it("never goes below zero, even after everything is sold at a profit", () => {
-    const timeline = buildCostTimeline(
-      [[trade("BUY", "2026-01-10", "10", "100"), trade("SELL", "2026-03-10", "10", "500")]],
-      plnOnly,
-      noFx,
-    );
-
-    expect(costs(timeline).at(-1)).toEqual(["2026-03-10", "0"]);
-  });
-
-  it("adds up the accounts, each with its own FIFO", () => {
-    const timeline = buildCostTimeline(
-      [
-        [trade("BUY", "2026-01-10", "10", "100")],
-        [trade("BUY", "2026-01-20", "10", "200"), trade("SELL", "2026-02-10", "10", "250")],
-      ],
-      plnOnly,
-      noFx,
-    );
-
-    expect(costs(timeline)).toEqual([
-      ["2026-01-10", "1000"],
-      ["2026-01-20", "3000"],
-      ["2026-02-10", "1000"],
-    ]);
-  });
-
-  it("is not changed by a split", () => {
-    const timeline = buildCostTimeline(
-      [[trade("BUY", "2026-01-10", "10", "100"), split("2026-02-01", "3")]],
-      plnOnly,
-      noFx,
-    );
-
-    expect(timeline.at(-1)?.cost?.toFixed(6)).toBe("1000.000000");
-  });
-
-  it("converts foreign purchases at the rate of the purchase", () => {
-    const entries = [
-      trade("BUY", "2026-01-10", "2", "100", { instrumentId: "AAPL", currency: "USD" }),
-    ];
-
-    expect(costs(buildCostTimeline([entries], () => "USD", usdAt("4")))).toEqual([
-      ["2026-01-10", "800"],
-    ]);
-    expect(costs(buildCostTimeline([entries], () => "USD", noFx))).toEqual([["2026-01-10", null]]);
+    expect(timeline.at(-1)).toEqual({ date: "2026-02-10", lots: [] });
   });
 
   it("ignores days with only cash movements or income", () => {
@@ -227,7 +143,58 @@ describe("buildCostTimeline", () => {
       currency: "PLN",
     };
 
-    expect(buildCostTimeline([[deposit]], plnOnly, noFx)).toEqual([]);
+    expect(buildLotTimeline([[deposit]])).toEqual([]);
+    expect(buildLotTimeline([])).toEqual([]);
+  });
+});
+
+describe("costOfLots", () => {
+  const plnOnly = () => "PLN";
+  const costAfter = (entries: LedgerEntry[], currencyOf = plnOnly, fx: FxOn = noFx) =>
+    buildLotTimeline([entries]).map((snapshot) => [
+      snapshot.date,
+      costOfLots(snapshot.lots, currencyOf, fx)?.toFixed() ?? null,
+    ]);
+
+  it("is the cost of what is still held, commissions included", () => {
+    const costs = costAfter([
+      trade("BUY", "2026-01-10", "10", "100", { fee: "5" }),
+      trade("BUY", "2026-02-10", "10", "200"),
+      trade("SELL", "2026-03-10", "15", "300"),
+    ]);
+
+    // The sale removes the whole first lot (1005) and half of the second (1000).
+    expect(costs).toEqual([
+      ["2026-01-10", "1005"],
+      ["2026-02-10", "3005"],
+      ["2026-03-10", "1000"],
+    ]);
+  });
+
+  it("never goes below zero, even after everything is sold at a profit", () => {
+    const costs = costAfter([
+      trade("BUY", "2026-01-10", "10", "100"),
+      trade("SELL", "2026-03-10", "10", "500"),
+    ]);
+
+    expect(costs.at(-1)).toEqual(["2026-03-10", "0"]);
+  });
+
+  it("is not changed by a split", () => {
+    const [, afterSplit] = buildLotTimeline([
+      [trade("BUY", "2026-01-10", "10", "100"), split("2026-02-01", "3")],
+    ]);
+
+    expect(costOfLots(afterSplit.lots, plnOnly, noFx)?.toFixed(6)).toBe("1000.000000");
+  });
+
+  it("converts foreign purchases at the rate of the purchase", () => {
+    const entries = [
+      trade("BUY", "2026-01-10", "2", "100", { instrumentId: "AAPL", currency: "USD" }),
+    ];
+
+    expect(costAfter(entries, () => "USD", usdAt("4"))).toEqual([["2026-01-10", "800"]]);
+    expect(costAfter(entries, () => "USD", noFx)).toEqual([["2026-01-10", null]]);
   });
 });
 
@@ -266,6 +233,34 @@ describe("createPriceLookup", () => {
     expect(priceOn("CDR", "2026-04-01")).toMatchObject({ date: "2026-03-10", fromTrade: true });
   });
 
+  it("values a retail treasury bond by what it has accrued since the purchase", () => {
+    const bonds = new Map([
+      ["TOS", { kind: "TOS" as const, firstRate: d("0.044"), laterRates: new Map() }],
+    ]);
+    const priceOn = createPriceLookup(new Map(), [], bonds);
+
+    expect(priceOn("TOS", "2027-11-01", "2026-11-01")).toEqual({
+      date: "2027-11-01",
+      close: d("104.4"),
+      fromTrade: false,
+      estimated: undefined,
+    });
+    // The same series bought later has accrued less.
+    expect(priceOn("TOS", "2027-11-01", "2026-11-30")?.close.lt(d("104.4"))).toBe(true);
+    // Without a purchase day there is no price for a bond.
+    expect(priceOn("TOS", "2027-11-01")).toBeNull();
+  });
+
+  it("marks a bond price as an estimate when a rate has not been announced", () => {
+    const bonds = new Map([
+      ["EDO", { kind: "EDO" as const, firstRate: d("0.0535"), laterRates: new Map() }],
+    ]);
+    const priceOn = createPriceLookup(new Map(), [], bonds);
+
+    expect(priceOn("EDO", "2027-06-01", "2026-11-01")?.estimated).toBeUndefined();
+    expect(priceOn("EDO", "2028-06-01", "2026-11-01")?.estimated).toBe(true);
+  });
+
   it("knows nothing before the first trade or about other instruments", () => {
     const priceOn = createPriceLookup(market, entries);
 
@@ -279,7 +274,7 @@ describe("valueSeries", () => {
     trade("BUY", "2026-01-12", "10", "100"),
     trade("BUY", "2026-01-14", "2", "50", { instrumentId: "AAPL", currency: "USD" }),
   ];
-  const timeline = buildQuantityTimeline([entries]);
+  const timeline = buildLotTimeline([entries]);
   const priceOn = createPriceLookup(
     new Map([
       [
