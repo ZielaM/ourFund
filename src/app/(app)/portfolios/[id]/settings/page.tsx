@@ -3,18 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ActionForm } from "@/components/form/action-form";
-import { CheckboxField, TextField } from "@/components/form/fields";
+import { CheckboxField, SelectField, TextField } from "@/components/form/fields";
 import { SubmitButton } from "@/components/form/submit-button";
 import { PageTitle } from "@/components/layout/page-title";
 import { AccountFields } from "@/components/portfolio/account-fields";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
+import { listInstruments } from "@/server/portfolio/instruments";
 import { getPortfolio } from "@/server/portfolio/portfolios";
 import {
   createAccountAction,
   deleteAccountAction,
   deletePortfolioAction,
   renamePortfolioAction,
+  setBenchmarkAction,
   updateAccountAction,
 } from "../../actions";
 
@@ -34,6 +36,7 @@ export default async function PortfolioSettingsPage({
     notFound();
   }
 
+  const instruments = await listInstruments(getDb());
   const t = await getTranslations("portfolio");
   const tTypes = await getTranslations("accountTypes");
 
@@ -103,6 +106,30 @@ export default async function PortfolioSettingsPage({
             <SubmitButton className="self-start">{t("accounts.add")}</SubmitButton>
           </ActionForm>
         </div>
+      </section>
+
+      <section aria-labelledby="benchmark-title" className="mt-12 flex max-w-sm flex-col gap-5">
+        <div className="flex max-w-prose flex-col gap-1">
+          <h2 id="benchmark-title" className="text-xl font-semibold">
+            {t("benchmark.settingsTitle")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("benchmark.settingsIntro")}</p>
+        </div>
+        <ActionForm action={setBenchmarkAction.bind(null, portfolio.id)}>
+          <SelectField
+            name="instrumentId"
+            label={t("benchmark.field")}
+            defaultValue={portfolio.benchmarkInstrumentId ?? ""}
+          >
+            <option value="">{t("benchmark.none")}</option>
+            {instruments.map((instrument) => (
+              <option key={instrument.id} value={instrument.id}>
+                {instrument.symbol} ({instrument.name})
+              </option>
+            ))}
+          </SelectField>
+          <SubmitButton className="self-start">{t("benchmark.save")}</SubmitButton>
+        </ActionForm>
       </section>
 
       <section aria-labelledby="rename-title" className="mt-12 flex max-w-sm flex-col gap-5">

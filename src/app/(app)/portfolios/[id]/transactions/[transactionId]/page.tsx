@@ -10,6 +10,7 @@ import {
   type TransactionFormValues,
 } from "@/components/portfolio/transaction-fields";
 import { CURRENCIES } from "@/domain/portfolio/currencies";
+import { isTradable } from "@/domain/portfolio/naming";
 import { toInputValue } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
@@ -62,7 +63,7 @@ export default async function EditTransactionPage({
     notFound();
   }
 
-  const instruments = await listInstruments(db);
+  const instruments = (await listInstruments(db)).filter(({ type }) => isTradable(type));
   const t = await getTranslations("transaction");
   const portfolioHref = `/portfolios/${portfolio.id}`;
 

@@ -234,6 +234,70 @@ describe("refreshMarketData: prices", () => {
   });
 });
 
+describe("refreshMarketData: benchmarks", () => {
+  async function benchmarkOf(portfolioName: string, instrumentId: string) {
+    const portfolio = await db.portfolio.findFirstOrThrow({ where: { name: portfolioName } });
+    await db.portfolio.update({
+      where: { id: portfolio.id },
+      data: { benchmarkInstrumentId: instrumentId },
+    });
+  }
+
+  it("fetches a benchmark that nobody holds, from the portfolio's first transaction", async () => {
+    const cdr = await instrument("CDR");
+    const spx = await instrument("SPX", "OTHER", "USD", { quoteSymbol: "^GSPC" });
+    await bought(cdr, "2026-11-10");
+    await benchmarkOf("Główny", spx);
+    const providers = fakeProviders({ quotes: async () => closes(["2026-11-12", "7500"]) });
+
+    const report = await refreshMarketData(db, providers, options);
+
+    expect(providers.quotes.mock.calls.map((call) => call.slice(0, 3))).toEqual([
+      ["CDR.WA", "PLN", "2026-11-03"],
+      ["^GSPC", "USD", "2026-11-03"],
+    ]);
+    expect(report.instruments).toEqual({ updated: 2, failed: [] });
+    await expect(storedPrices(spx)).resolves.toEqual([["2026-11-12", "7500", "YAHOO"]]);
+  });
+
+  it("also fetches exchange rates for the benchmark's currency", async () => {
+    const cdr = await instrument("CDR");
+    const spx = await instrument("SPX", "OTHER", "USD", { quoteSymbol: "^GSPC" });
+    await bought(cdr, "2026-11-10");
+    await benchmarkOf("Główny", spx);
+    const providers = fakeProviders();
+
+    await refreshMarketData(db, providers, options);
+
+    expect(providers.rates.mock.calls.map((call) => call[0])).toEqual(["USD"]);
+  });
+
+  it("reaches back to the earlier date when the benchmark is also held", async () => {
+    const etf = await instrument("ETFBW20TR");
+    const cdr = await instrument("CDR");
+    await bought(etf, "2026-11-10");
+    await bought(cdr, "2026-06-01");
+    await benchmarkOf("Główny", etf);
+    const providers = fakeProviders();
+
+    await refreshMarketData(db, providers, options);
+
+    const call = providers.quotes.mock.calls.find(([symbol]) => symbol === "ETFBW20TR.WA");
+    expect(call?.[2]).toBe("2026-05-25");
+  });
+
+  it("skips the benchmark of a portfolio without transactions", async () => {
+    const spx = await instrument("SPX", "OTHER", "USD", { quoteSymbol: "^GSPC" });
+    await benchmarkOf("Główny", spx);
+    const providers = fakeProviders();
+
+    const report = await refreshMarketData(db, providers, options);
+
+    expect(providers.quotes).not.toHaveBeenCalled();
+    expect(report.instruments).toEqual({ updated: 0, failed: [] });
+  });
+});
+
 describe("refreshMarketData: exchange rates", () => {
   it("fetches NBP rates for every foreign currency in use, never for PLN", async () => {
     const aapl = await instrument("AAPL", "NASDAQ", "USD");
@@ -319,20 +383,64 @@ describe("refresh report", () => {
     await expect(getLastRefresh(db)).resolves.toBeNull();
   });
 
-  it("joins a refresh that is already running instead of starting a second one", async () => {
+  it("never runs two refreshes at once; calls made during a run share one follow-up run", async () => {
     const cdr = await instrument("CDR");
     await bought(cdr, "2026-11-10");
-    const providers = fakeProviders();
+    let active = 0;
+    let overlapped = false;
+    const providers = fakeProviders({
+      quotes: async () => {
+        active += 1;
+        overlapped ||= active > 1;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        active -= 1;
+        return closes(["2026-11-12", "278.2"]);
+      },
+    });
 
-    const [first, second] = await Promise.all([
+    const [first, second, third] = await Promise.all([
+      refreshMarketDataOnce(db, providers, options),
       refreshMarketDataOnce(db, providers, options),
       refreshMarketDataOnce(db, providers, options),
     ]);
 
-    expect(second).toBe(first);
-    expect(providers.quotes).toHaveBeenCalledTimes(1);
+    expect(overlapped).toBe(false);
+    // The first call ran alone; the two that arrived meanwhile got one more run between them.
+    expect(providers.quotes).toHaveBeenCalledTimes(2);
+    expect(third).toBe(second);
+    expect(second).not.toBe(first);
+  });
+
+  it("gives a call made during a run a result that includes changes made since it started", async () => {
+    const cdr = await instrument("CDR");
+    await bought(cdr, "2026-11-10");
+    const providers = fakeProviders({
+      quotes: async (symbol) => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return symbol === "CDR.WA"
+          ? closes(["2026-11-12", "278.2"])
+          : { ok: false, reason: "notFound" };
+      },
+    });
+
+    const first = refreshMarketDataOnce(db, providers, options);
+    await db.instrument.update({ where: { id: cdr }, data: { quoteSymbol: "WRONG.WA" } });
+    const second = refreshMarketDataOnce(db, providers, options);
+
+    await expect(second).resolves.toMatchObject({
+      instruments: { failed: [{ symbol: "CDR", quoteSymbol: "WRONG.WA", reason: "notFound" }] },
+    });
+    await first;
+  });
+
+  it("starts a fresh run once the previous one has finished", async () => {
+    const cdr = await instrument("CDR");
+    await bought(cdr, "2026-11-10");
+    const providers = fakeProviders();
 
     await refreshMarketDataOnce(db, providers, options);
+    await refreshMarketDataOnce(db, providers, options);
+
     expect(providers.quotes).toHaveBeenCalledTimes(2);
   });
 });

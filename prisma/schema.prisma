@@ -74,8 +74,12 @@ model Portfolio {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accounts Account[]
+  /// Instrument the portfolio's return is compared with (an index or an ETF tracking one).
+  benchmarkInstrumentId String? @map("benchmark_instrument_id") @db.Uuid
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  benchmark Instrument? @relation("PortfolioBenchmark", fields: [benchmarkInstrumentId], references: [id], onDelete: SetNull)
+  accounts  Account[]
 
   @@unique([userId, name])
   @@map("portfolios")
@@ -114,6 +118,8 @@ enum InstrumentType {
   ETF
   BOND
   CRYPTO
+  /// Not tradable: exists only to be quoted and used as a benchmark.
+  INDEX
 
   @@map("instrument_type")
 }
@@ -140,6 +146,7 @@ model Instrument {
   createdBy    User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
   transactions Transaction[]
   prices       Price[]
+  benchmarkFor Portfolio[]   @relation("PortfolioBenchmark")
 
   @@unique([symbol, market])
   @@map("instruments")

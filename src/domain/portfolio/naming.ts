@@ -5,8 +5,13 @@ import { MARKETS } from "./markets";
 export const ACCOUNT_TYPES = ["STANDARD", "IKE", "IKZE", "OKI"] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
-export const INSTRUMENT_TYPES = ["STOCK", "ETF", "BOND", "CRYPTO"] as const;
+export const INSTRUMENT_TYPES = ["STOCK", "ETF", "BOND", "CRYPTO", "INDEX"] as const;
 export type InstrumentType = (typeof INSTRUMENT_TYPES)[number];
+
+/** An index cannot be bought or sold; it is only quoted, to serve as a benchmark. */
+export function isTradable(type: string): boolean {
+  return type !== "INDEX";
+}
 
 export const NAME_MAX_LENGTH = 60;
 export const INSTRUMENT_NAME_MAX_LENGTH = 120;

@@ -19,6 +19,7 @@ import {
   deleteAccount,
   deletePortfolio,
   renamePortfolio,
+  setBenchmark,
   updateAccount,
 } from "@/server/portfolio/portfolios";
 import {
@@ -76,6 +77,26 @@ export async function renamePortfolioAction(
 
   revalidatePath(`/portfolios/${portfolioId}`, "layout");
   return formSucceeded("portfolios.renamed");
+}
+
+export async function setBenchmarkAction(
+  portfolioId: string,
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const instrumentId = textField(formData, "instrumentId");
+
+  const result = await setBenchmark(getDb(), user, portfolioId, instrumentId || null);
+
+  if (!result.ok) {
+    return result.reason === "instrumentNotFound"
+      ? fieldFailed("instrumentId", "transactions.instrumentNotFound", { instrumentId })
+      : formFailed("notFound");
+  }
+
+  revalidatePath(`/portfolios/${portfolioId}`, "layout");
+  return formSucceeded("portfolios.benchmarkSaved");
 }
 
 export async function deletePortfolioAction(
@@ -207,6 +228,8 @@ function transactionFailure(
       return fieldFailed("accountId", "transactions.accountNotFound", values);
     case "instrumentNotFound":
       return fieldFailed("instrumentId", "transactions.instrumentNotFound", values);
+    case "notTradable":
+      return fieldFailed("instrumentId", "transactions.notTradable", values);
     case "insufficientQuantity":
       return formFailed("transactions.insufficientQuantity", { values });
     case "notFound":

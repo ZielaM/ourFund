@@ -3,10 +3,12 @@ import { todayInWarsaw, utcToIsoDate, type IsoDate } from "@/domain/portfolio/da
 import { aggregateHoldings } from "@/domain/portfolio/holdings";
 import { computeLedger, type LedgerEntry } from "@/domain/portfolio/ledger";
 import {
+  benchmarkLevels,
   buildCostTimeline,
   buildQuantityTimeline,
   contributions,
   createPriceLookup,
+  cumulativeReturns,
   dailyDates,
   timeWeightedReturns,
   valueSeries,
@@ -49,6 +51,14 @@ export type ChartPoint = {
   cost: number | null;
 };
 
+export type BenchmarkComparison = {
+  instrument: { id: string; symbol: string; name: string };
+  /** The benchmark's return in PLN over the period the portfolio's TWR covers. */
+  return: number | null;
+  /** Cumulative returns of both, day by day. */
+  chart: { date: IsoDate; portfolio: number | null; benchmark: number | null }[];
+};
+
 export type PortfolioValuationView = {
   date: IsoDate;
   totals: PortfolioValuation["totals"];
@@ -69,6 +79,8 @@ export type PortfolioValuationView = {
     xirr: number | null;
     since: IsoDate | null;
     chart: ChartPoint[];
+    /** Null when no benchmark was chosen for the portfolio. */
+    benchmark: BenchmarkComparison | null;
   };
   /** What stands between the user and a complete valuation. */
   missing: {
@@ -140,8 +152,25 @@ export async function getPortfolioValuation(
   const instrumentById = new Map(instruments.map((instrument) => [instrument.id, instrument]));
   const currencyOf = (instrumentId: string) => instrumentById.get(instrumentId)!.currency;
 
+  const benchmark = portfolio.benchmarkInstrumentId
+    ? await db.instrument.findUnique({
+        where: { id: portfolio.benchmarkInstrumentId },
+        select: { id: true, symbol: true, name: true, currency: true },
+      })
+    : null;
+  const benchmarkPrices = benchmark
+    ? await db.price.findMany({
+        where: { instrumentId: benchmark.id },
+        select: { date: true, close: true },
+      })
+    : [];
+
   const currencies = [
-    ...new Set([...instruments.map((i) => i.currency), ...rows.map((row) => row.currency)]),
+    ...new Set([
+      ...instruments.map((i) => i.currency),
+      ...rows.map((row) => row.currency),
+      ...(benchmark ? [benchmark.currency] : []),
+    ]),
   ].filter((currency) => currency !== REPORTING_CURRENCY);
   const rates = await db.fxRate.findMany({ where: { currency: { in: currencies } } });
 
@@ -225,6 +254,45 @@ export async function getPortfolioValuation(
     };
   });
 
+  // The benchmark over the days the portfolio has a return for.
+  let comparison: BenchmarkComparison | null = null;
+  if (benchmark) {
+    const benchmarkPriceOn = createPriceLookup(
+      new Map([
+        [
+          benchmark.id,
+          benchmarkPrices.map((price) => ({
+            date: utcToIsoDate(price.date),
+            close: new Decimal(price.close.toString()),
+          })),
+        ],
+      ]),
+      [],
+    );
+    const benchmarkReturns = cumulativeReturns(
+      benchmarkLevels(
+        benchmark.id,
+        benchmark.currency,
+        returns.map((point) => point.date),
+        benchmarkPriceOn,
+        fxOn,
+      ),
+    );
+
+    comparison = {
+      instrument: { id: benchmark.id, symbol: benchmark.symbol, name: benchmark.name },
+      return: benchmarkReturns.at(-1)?.value ?? null,
+      chart: thinOut(
+        returns.map((point, index) => ({
+          date: point.date,
+          portfolio: point.twr,
+          benchmark: benchmarkReturns[index].value,
+        })),
+        MAX_CHART_POINTS,
+      ),
+    };
+  }
+
   const complete = !valuation.totals.incomplete && !flows.incomplete;
   const moneyWeighted = complete
     ? xirr([
@@ -274,6 +342,7 @@ export async function getPortfolioValuation(
       xirr: moneyWeighted,
       since: first,
       chart: thinOut(chart, MAX_CHART_POINTS),
+      benchmark: comparison,
     },
     missing: {
       marketPrices: holdings

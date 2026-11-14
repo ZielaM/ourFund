@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   accountInputSchema,
+  isTradable,
   INSTRUMENT_NAME_MAX_LENGTH,
   instrumentInputSchema,
   NAME_MAX_LENGTH,
@@ -128,5 +129,26 @@ describe("instrumentInputSchema", () => {
         }),
       ),
     ).toEqual(["name:name.tooLong"]);
+  });
+});
+
+describe("isTradable", () => {
+  it("is false only for an index", () => {
+    expect(isTradable("INDEX")).toBe(false);
+    for (const type of ["STOCK", "ETF", "BOND", "CRYPTO"]) {
+      expect(isTradable(type)).toBe(true);
+    }
+  });
+
+  it("lets an index be added to the catalogue", () => {
+    expect(
+      instrumentInputSchema.safeParse({
+        symbol: "SPX",
+        market: "OTHER",
+        name: "S&P 500",
+        type: "INDEX",
+        currency: "USD",
+      }).success,
+    ).toBe(true);
   });
 });

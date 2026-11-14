@@ -220,6 +220,32 @@ describe("addTransaction", () => {
     ).resolves.toEqual({ ok: false, reason: "instrumentNotFound" });
   });
 
+  it("refuses a transaction on an index, which exists only as a benchmark", async () => {
+    const index = await createInstrument(db, ania, {
+      symbol: "SPX",
+      market: "OTHER",
+      name: "S&P 500",
+      type: "INDEX",
+      currency: "USD",
+    });
+    if (!index.ok) throw new Error("setup failed");
+
+    await expect(
+      addTransaction(
+        db,
+        ania,
+        input({
+          type: "BUY",
+          instrumentId: index.instrument.id,
+          date: "2026-01-10",
+          quantity: "1",
+          price: "5000",
+        }),
+        now,
+      ),
+    ).resolves.toEqual({ ok: false, reason: "notTradable" });
+  });
+
   it("refuses to sell more than the account holds", async () => {
     await add(buy("2026-01-10", "10", "100"));
 

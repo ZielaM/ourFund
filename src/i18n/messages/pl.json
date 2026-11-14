@@ -135,7 +135,8 @@
       "enabled": "Konto zostało odblokowane."
     },
     "portfolios": {
-      "renamed": "Nazwa portfela została zmieniona."
+      "renamed": "Nazwa portfela została zmieniona.",
+      "benchmarkSaved": "Benchmark został zapisany."
     },
     "accounts": {
       "created": "Rachunek {name} został dodany.",
@@ -225,7 +226,8 @@
       "insufficientQuantity": "Na tym rachunku nie ma tylu sztuk w dniu transakcji. Sprawdź liczbę, datę i wcześniejsze transakcje.",
       "accountNotFound": "Wybierz rachunek z listy.",
       "instrumentNotFound": "Wybierz instrument z listy.",
-      "notFound": "Tej transakcji już nie ma."
+      "notFound": "Tej transakcji już nie ma.",
+      "notTradable": "Indeksu nie można kupić ani sprzedać. Wybierz instrument, którym się handluje, na przykład ETF na ten indeks."
     },
     "quoteSymbol": {
       "invalid": "Symbol może zawierać litery, cyfry, kropkę, myślnik oraz znaki = i ^."
@@ -351,6 +353,18 @@
       "byClass": "Klasy aktywów",
       "byCurrency": "Waluty",
       "byAccount": "Rachunki"
+    },
+    "benchmark": {
+      "title": "Na tle benchmarku",
+      "description": "Stopa zwrotu portfela (TWR) i zmiana wartości benchmarku {symbol} w złotych, od {date}.",
+      "portfolio": "Portfel",
+      "summary": "Portfel {portfolio}, {symbol} {benchmark}.",
+      "noData": "Brak notowań benchmarku {symbol}. Odśwież notowania na stronie Instrumenty.",
+      "settingsTitle": "Benchmark",
+      "settingsIntro": "Instrument, z którym porównujesz wynik portfela: indeks albo ETF na indeks. Dla polskiego rynku wybierz ETF, na przykład ETFBW20TR (WIG20TR), bo Yahoo Finance nie udostępnia historii indeksów GPW.",
+      "field": "Instrument porównawczy",
+      "none": "Bez benchmarku",
+      "save": "Zapisz benchmark"
     }
   },
   "transaction": {
@@ -446,7 +460,8 @@
     "STOCK": "Akcja",
     "ETF": "ETF",
     "BOND": "Obligacja",
-    "CRYPTO": "Kryptowaluta"
+    "CRYPTO": "Kryptowaluta",
+    "INDEX": "Indeks"
   },
   "markets": {
     "GPW": "GPW",
@@ -511,6 +526,7 @@
     "ETF": "ETF-y",
     "BOND": "Obligacje",
     "CRYPTO": "Kryptowaluty",
-    "CASH": "Gotówka"
+    "CASH": "Gotówka",
+    "INDEX": "Indeksy"
   }
 }

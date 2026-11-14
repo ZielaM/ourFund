@@ -22,6 +22,8 @@ export type PortfolioSummary = {
 export type PortfolioDetail = {
   id: string;
   name: string;
+  /** Instrument the portfolio's return is compared with, if one was chosen. */
+  benchmarkInstrumentId: string | null;
   accounts: AccountSummary[];
 };
 
@@ -85,6 +87,7 @@ export async function getPortfolio(
   return {
     id: portfolio.id,
     name: portfolio.name,
+    benchmarkInstrumentId: portfolio.benchmarkInstrumentId,
     accounts: portfolio.accounts.map((account) => ({
       id: account.id,
       name: account.name,
@@ -130,6 +133,33 @@ export async function renamePortfolio(
     }
     throw error;
   }
+}
+
+/** Chooses the instrument a portfolio is compared with; null removes the comparison. */
+export async function setBenchmark(
+  db: Db,
+  actor: SessionUser,
+  portfolioId: string,
+  instrumentId: string | null,
+): Promise<{ ok: true } | { ok: false; reason: "notFound" | "instrumentNotFound" }> {
+  if (!(await getPortfolio(db, actor, portfolioId))) {
+    return { ok: false, reason: "notFound" };
+  }
+
+  if (instrumentId !== null) {
+    const exists = isUuid(instrumentId)
+      ? await db.instrument.findUnique({ where: { id: instrumentId }, select: { id: true } })
+      : null;
+    if (!exists) {
+      return { ok: false, reason: "instrumentNotFound" };
+    }
+  }
+
+  await db.portfolio.update({
+    where: { id: portfolioId },
+    data: { benchmarkInstrumentId: instrumentId },
+  });
+  return { ok: true };
 }
 
 /** Deletes a portfolio together with its accounts and transactions. */

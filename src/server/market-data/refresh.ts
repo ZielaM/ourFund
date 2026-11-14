@@ -70,9 +70,12 @@ export async function refreshMarketData(
   const today = todayInWarsaw(options.now ?? new Date());
   const pauseMs = options.pauseMs ?? 300;
 
-  const [instruments, firstTransactions, priceRanges] = await Promise.all([
+  const [instruments, firstTransactions, priceRanges, benchmarked] = await Promise.all([
     db.instrument.findMany({
-      where: { priceSource: "YAHOO", transactions: { some: {} } },
+      where: {
+        priceSource: "YAHOO",
+        OR: [{ transactions: { some: {} } }, { benchmarkFor: { some: {} } }],
+      },
       orderBy: { symbol: "asc" },
     }),
     db.transaction.groupBy({
@@ -86,11 +89,34 @@ export async function refreshMarketData(
       _min: { date: true },
       _max: { date: true },
     }),
+    // Portfolios with a benchmark, each with the date of its first transaction.
+    db.portfolio.findMany({
+      where: { benchmarkInstrumentId: { not: null } },
+      select: {
+        benchmarkInstrumentId: true,
+        accounts: {
+          select: {
+            transactions: { orderBy: { date: "asc" }, take: 1, select: { date: true } },
+          },
+        },
+      },
+    }),
   ]);
 
-  const firstTransaction = new Map(
+  // History is needed from the first transaction on the instrument itself, or from the
+  // first transaction of any portfolio that uses it as a benchmark, whichever is earlier.
+  const firstTransaction = new Map<string | null, Date | null>(
     firstTransactions.map((row) => [row.instrumentId, row._min.date]),
   );
+  for (const portfolio of benchmarked) {
+    for (const account of portfolio.accounts) {
+      const date = account.transactions[0]?.date;
+      const known = firstTransaction.get(portfolio.benchmarkInstrumentId);
+      if (date && (!known || date < known)) {
+        firstTransaction.set(portfolio.benchmarkInstrumentId, date);
+      }
+    }
+  }
   const priceRange = new Map(priceRanges.map((row) => [row.instrumentId, row]));
   const report: RefreshReport = {
     finishedAt: "",
@@ -103,6 +129,12 @@ export async function refreshMarketData(
     const fail = (reason: QuoteFailure | "noSymbol") =>
       report.instruments.failed.push({ symbol: instrument.symbol, quoteSymbol, reason });
 
+    // A benchmark of a portfolio that has no transactions yet: nothing to compare with.
+    const since = firstTransaction.get(instrument.id);
+    if (!since) {
+      continue;
+    }
+
     if (!quoteSymbol) {
       fail("noSymbol");
       continue;
@@ -110,7 +142,7 @@ export async function refreshMarketData(
 
     const stored = priceRange.get(instrument.id);
     const range = fetchRange(
-      addDays(utcToIsoDate(firstTransaction.get(instrument.id)!), -LEAD_DAYS),
+      addDays(utcToIsoDate(since), -LEAD_DAYS),
       stored?._min.date && stored._max.date
         ? { min: utcToIsoDate(stored._min.date), max: utcToIsoDate(stored._max.date) }
         : null,
@@ -185,7 +217,7 @@ async function refreshRates(
     db.transaction.aggregate({ _min: { date: true } }),
     db.transaction.findMany({ distinct: ["currency"], select: { currency: true } }),
     db.instrument.findMany({
-      where: { transactions: { some: {} } },
+      where: { OR: [{ transactions: { some: {} } }, { benchmarkFor: { some: {} } }] },
       distinct: ["currency"],
       select: { currency: true },
     }),
@@ -246,16 +278,32 @@ export async function getLastRefresh(db: PrismaClient): Promise<RefreshReport | 
 }
 
 let running: Promise<RefreshReport> | null = null;
+let queued: Promise<RefreshReport> | null = null;
 
-/** Like `refreshMarketData`, but a call made while a refresh is running joins that run. */
+/**
+ * Like `refreshMarketData`, but never two at once. A call made while a refresh is running
+ * waits for it and then gets one more run: the running one may have started before the
+ * change that prompted the call (a new transaction, another quote symbol). Any number of
+ * calls made during a run share that single follow-up run.
+ */
 export function refreshMarketDataOnce(
   db: PrismaClient,
   providers: MarketDataProviders,
   options?: RefreshOptions,
 ): Promise<RefreshReport> {
-  running ??= refreshMarketData(db, providers, options).finally(() => {
-    running = null;
-  });
+  if (!running) {
+    running = refreshMarketData(db, providers, options).finally(() => {
+      running = null;
+    });
+    return running;
+  }
 
-  return running;
+  queued ??= running
+    .catch(() => undefined)
+    .then(() => {
+      queued = null;
+      return refreshMarketDataOnce(db, providers, options);
+    });
+
+  return queued;
 }

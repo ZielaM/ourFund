@@ -49,6 +49,10 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   provider, run `pnpm exec tsx scripts/check-market-data.mts` against the real services.
   stooq.pl is deliberately not used: it puts a browser check in front of automated clients.
 - Prices entered by hand (`source = MANUAL`) are never overwritten by a refresh.
+- A benchmark is any instrument of the catalogue (`Portfolio.benchmarkInstrumentId`); it is
+  refreshed even when nobody holds it. Instruments of type `INDEX` cannot be traded. Yahoo
+  has no history for GPW indices (WIG, WIG20), only for ETFs tracking them and for foreign
+  indices such as `^GSPC`.
 - Valuation (`src/domain/valuation/`) is in PLN. Cost and results are converted at the rate
   of each purchase or sale: the broker's rate when the account paid in PLN, otherwise the NBP
   rate of that day. A value that needs a missing price or rate is `null`, never a guess, and
