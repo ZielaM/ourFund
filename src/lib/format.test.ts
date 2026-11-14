@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "@/domain/decimal";
-import { formatDate, formatMoney, formatPrice, formatQuantity, toInputValue } from "./format";
+import {
+  formatCompact,
+  formatDate,
+  formatMoney,
+  formatPln,
+  formatPrice,
+  formatQuantity,
+  formatShare,
+  formatSignedPercent,
+  toInputValue,
+} from "./format";
 
 const d = (value: string) => new Decimal(value);
 // Intl uses non-breaking spaces; plain spaces keep the expectations readable.
@@ -66,5 +76,35 @@ describe("toInputValue", () => {
   it("uses a comma and no grouping, so the value can be parsed back", () => {
     expect(toInputValue(d("1234.5"))).toBe("1234,5");
     expect(toInputValue(d("10.0000000000"))).toBe("10");
+  });
+});
+
+describe("formatSignedPercent", () => {
+  it("shows two decimal places and an explicit plus for gains", () => {
+    expect(plain(formatSignedPercent(0.1234))).toBe("+12,34%");
+    expect(plain(formatSignedPercent(-0.131987))).toBe("-13,20%");
+    expect(plain(formatSignedPercent(0))).toBe("0,00%");
+  });
+});
+
+describe("formatShare", () => {
+  it("shows one decimal place", () => {
+    expect(plain(formatShare(0.256))).toBe("25,6%");
+    expect(plain(formatShare(1))).toBe("100,0%");
+  });
+});
+
+describe("formatCompact", () => {
+  it("shortens large amounts for chart axes", () => {
+    expect(plain(formatCompact(12500))).toBe("12,5 tys.");
+    expect(plain(formatCompact(1500000))).toBe("1,5 mln");
+    expect(plain(formatCompact(850))).toBe("850");
+  });
+});
+
+describe("formatPln", () => {
+  it("formats a plain number as złoty", () => {
+    expect(plain(formatPln(1234.5))).toBe("1 234,50 zł");
+    expect(plain(formatPln(-80))).toBe("-80,00 zł");
   });
 });

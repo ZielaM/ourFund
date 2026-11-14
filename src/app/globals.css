@@ -70,6 +70,10 @@
   --border: #d3dae6;
   --input: #b9c3d6;
   --ring: #1b2f5e;
+  /* Charts: one accent series, context in gray, hairline grid. */
+  --chart-value: #2f5bb7;
+  --chart-context: #8a93a6;
+  --chart-grid: #e3e7ee;
   --gain: #17703f;
   --loss: #b42318;
   --chart-1: #1b2f5e;

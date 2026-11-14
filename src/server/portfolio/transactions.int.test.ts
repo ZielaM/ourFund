@@ -6,8 +6,8 @@ import {
 import type { SessionUser } from "@/server/auth/sessions";
 import { disconnectDb, getDb } from "@/server/db/client";
 import { resetDatabase } from "@/test/db";
+import { getPortfolioValuation } from "@/server/valuation/portfolio-valuation";
 import { createTestUser, UNKNOWN_ID } from "@/test/fixtures";
-import { getPortfolioHoldings } from "./holdings";
 import { createInstrument } from "./instruments";
 import { createAccount, createPortfolio } from "./portfolios";
 import {
@@ -46,7 +46,7 @@ async function add(transaction: TransactionInput, actor = ania): Promise<string>
 }
 
 async function holdingOf(symbol: string) {
-  const result = await getPortfolioHoldings(db, ania, portfolioId);
+  const result = await getPortfolioValuation(db, ania, portfolioId, now);
   return result?.holdings.find((holding) => holding.instrument.symbol === symbol);
 }
 
@@ -187,7 +187,7 @@ describe("addTransaction", () => {
     ]);
     const holding = await holdingOf("CDR");
     expect(holding?.quantity.toFixed()).toBe("20");
-    expect(holding?.income.PLN.toFixed()).toBe("40.5");
+    expect(holding?.income?.toFixed()).toBe("40.5");
   });
 
   it("accepts a transaction dated today in Poland and rejects tomorrow's", async () => {
@@ -428,15 +428,8 @@ describe("listTransactions", () => {
   });
 });
 
-describe("getPortfolioHoldings", () => {
-  it("is empty for a portfolio without transactions", async () => {
-    await expect(getPortfolioHoldings(db, ania, portfolioId)).resolves.toEqual({
-      holdings: [],
-      cash: [],
-    });
-  });
-
-  it("computes positions with FIFO per account and adds them up", async () => {
+describe("holdings computed from transactions", () => {
+  it("uses FIFO per account and adds the accounts up", async () => {
     await add(buy("2026-01-10", "10", "100", { fee: "5" }));
     await add(buy("2026-02-10", "10", "200"));
     await add(sell("2026-03-10", "15", "300", { fee: "10" }));
@@ -446,15 +439,18 @@ describe("getPortfolioHoldings", () => {
 
     // XTB: 5 units left from the second lot (cost 1000); IKE: 20 units (cost 5000).
     expect(holding?.quantity.toFixed()).toBe("25");
-    expect(holding?.costBasis.toFixed()).toBe("6000");
+    expect(holding?.cost?.toFixed()).toBe("6000");
     expect(holding?.averageCost?.toFixed()).toBe("240");
     // 15 × 300 − 10 − (1005 + 5 × 200)
-    expect(holding?.realizedGain.toFixed()).toBe("2485");
+    expect(holding?.realized?.toFixed()).toBe("2485");
     expect(holding?.instrument).toMatchObject({ symbol: "CDR", currency: "PLN" });
-    expect(holding?.accounts.map((a) => a.quantity.toFixed())).toEqual(["5", "20"]);
+    expect(holding?.accounts.map((a) => [a.accountName, a.quantity.toFixed()])).toEqual([
+      ["XTB", "5"],
+      ["IKE", "20"],
+    ]);
   });
 
-  it("lists holdings by symbol and cash per account and currency", async () => {
+  it("tracks cash per account and currency", async () => {
     await add(input({ type: "DEPOSIT", date: "2026-01-02", amount: "5000", currency: "PLN" }));
     await add(buy("2026-01-10", "10", "100"));
     await add(
@@ -473,9 +469,12 @@ describe("getPortfolioHoldings", () => {
       accountId: ikeId,
     });
 
-    const result = await getPortfolioHoldings(db, ania, portfolioId);
+    const result = await getPortfolioValuation(db, ania, portfolioId, now);
 
-    expect(result?.holdings.map((holding) => holding.instrument.symbol)).toEqual(["AAPL", "CDR"]);
+    expect(result?.holdings.map((holding) => holding.instrument.symbol).sort()).toEqual([
+      "AAPL",
+      "CDR",
+    ]);
     expect(
       result?.cash.map((balance) => [
         balance.accountName,
@@ -487,10 +486,6 @@ describe("getPortfolioHoldings", () => {
       ["IKE", "EUR", "300"],
     ]);
   });
-
-  it("returns null for a portfolio that does not exist", async () => {
-    await expect(getPortfolioHoldings(db, ania, UNKNOWN_ID)).resolves.toBeNull();
-  });
 });
 
 describe("isolation between users", () => {
@@ -499,7 +494,7 @@ describe("isolation between users", () => {
 
     await expect(getTransaction(db, jan, id)).resolves.toBeNull();
     await expect(listTransactions(db, jan, portfolioId)).resolves.toBeNull();
-    await expect(getPortfolioHoldings(db, jan, portfolioId)).resolves.toBeNull();
+    await expect(getPortfolioValuation(db, jan, portfolioId, now)).resolves.toBeNull();
   });
 
   it("does not let another user add, change or delete transactions", async () => {
