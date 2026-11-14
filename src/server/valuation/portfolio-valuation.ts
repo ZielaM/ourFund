@@ -4,9 +4,9 @@ import { aggregateHoldings } from "@/domain/portfolio/holdings";
 import { computeLedger, type LedgerEntry } from "@/domain/portfolio/ledger";
 import {
   benchmarkLevels,
-  buildCostTimeline,
-  buildQuantityTimeline,
+  buildLotTimeline,
   contributions,
+  costOfLots,
   createPriceLookup,
   cumulativeReturns,
   dailyDates,
@@ -27,6 +27,7 @@ import {
   type PositionValuation,
 } from "@/domain/valuation/valuation";
 import type { SessionUser } from "@/server/auth/sessions";
+import { loadBondSeries } from "@/server/bonds/bonds";
 import type { Db } from "@/server/db/types";
 import type { InstrumentSummary } from "@/server/portfolio/instruments";
 import { getPortfolio } from "@/server/portfolio/portfolios";
@@ -88,6 +89,8 @@ export type PortfolioValuationView = {
     marketPrices: string[];
     /** Currencies without an NBP rate. */
     rates: string[];
+    /** Bond series valued with a rate that has not been entered for the current period. */
+    bondRates: string[];
   };
 };
 
@@ -203,7 +206,7 @@ export async function getPortfolioValuation(
       { date: utcToIsoDate(price.date), close: new Decimal(price.close.toString()) },
     ]);
   }
-  const priceOn = createPriceLookup(marketPrices, entries);
+  const priceOn = createPriceLookup(marketPrices, entries, await loadBondSeries(db, instrumentIds));
 
   const valuation = valuePortfolio(accountLedgers, currencyOf, today, priceOn, fxOn);
   const accountName = new Map(portfolio.accounts.map((account) => [account.id, account.name]));
@@ -228,21 +231,13 @@ export async function getPortfolioValuation(
   // History and returns, measured on the securities (cash excluded).
   const first = rows[0] ? utcToIsoDate(rows[0].date) : null;
   const dates = first ? dailyDates(first, today) : [];
-  const series = valueSeries(
-    buildQuantityTimeline(entriesByAccount),
-    dates,
-    currencyOf,
-    priceOn,
-    fxOn,
-  );
+  const timeline = buildLotTimeline(entriesByAccount);
+  const series = valueSeries(timeline, dates, currencyOf, priceOn, fxOn);
   const flows = contributions(entries, fxOn);
   const returns = timeWeightedReturns(series, flows.byDate);
 
   const costOn = createLookup(
-    buildCostTimeline(entriesByAccount, currencyOf, fxOn).map(({ date, cost }) => ({
-      date,
-      value: cost,
-    })),
+    timeline.map(({ date, lots }) => ({ date, value: costOfLots(lots, currencyOf, fxOn) })),
   );
   const chart = series.map((point) => {
     const cost = costOn(point.date);
@@ -350,6 +345,10 @@ export async function getPortfolioValuation(
         .map((holding) => holding.instrument.symbol)
         .sort(),
       rates: [...missingRates].sort(),
+      bondRates: holdings
+        .filter((holding) => holding.price?.estimated)
+        .map((holding) => holding.instrument.symbol)
+        .sort(),
     },
   };
 }

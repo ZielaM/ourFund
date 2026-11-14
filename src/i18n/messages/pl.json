@@ -154,6 +154,11 @@
     "prices": {
       "saved": "Kurs został zapisany.",
       "deleted": "Kurs został usunięty."
+    },
+    "bonds": {
+      "created": "Seria {series} została dodana.",
+      "rateSaved": "Oprocentowanie zostało zapisane.",
+      "rateDeleted": "Oprocentowanie zostało usunięte."
     }
   },
   "errors": {
@@ -238,6 +243,16 @@
     "prices": {
       "notManual": "Usunąć można tylko kurs wpisany ręcznie.",
       "notFound": "Tego kursu już nie ma."
+    },
+    "bondSeries": {
+      "invalid": "Podaj symbol serii, na przykład EDO1135: trzy litery rodzaju oraz miesiąc i rok wykupu.",
+      "exists": "Ta seria jest już w katalogu."
+    },
+    "rate": {
+      "invalid": "Podaj oprocentowanie w procentach, na przykład 5,35."
+    },
+    "period": {
+      "invalid": "Wybierz okres z listy."
     }
   },
   "notFound": {
@@ -270,7 +285,8 @@
       "fxEffect": "w tym waluta",
       "realized": "Wynik zrealizowany",
       "income": "Dywidendy i odsetki",
-      "unknown": "brak"
+      "unknown": "brak",
+      "estimated": "szacunek"
     },
     "cash": {
       "title": "Gotówka",
@@ -337,7 +353,8 @@
       "unknown": "brak danych",
       "missingRates": "Brakuje kursów walut NBP: {currencies}. Odśwież notowania na stronie Instrumenty.",
       "missingPrices": "Bez notowań rynkowych: {symbols}. Te pozycje są wycenione po cenie ostatniej transakcji.",
-      "refreshLink": "Przejdź do instrumentów"
+      "refreshLink": "Przejdź do instrumentów",
+      "missingBondRates": "Bez wpisanego oprocentowania bieżącego okresu: {symbols}. Wycena tych obligacji jest szacunkiem."
     },
     "chart": {
       "title": "Wartość inwestycji",
@@ -396,7 +413,8 @@
       "splitRatio": "Stosunek podziału",
       "splitRatioHint": "Ile nowych sztuk przypada na jedną starą: 4 dla splitu 4:1, 0,1 dla scalenia 10:1.",
       "note": "Notatka",
-      "noteHint": "Opcjonalnie."
+      "noteHint": "Opcjonalnie.",
+      "bondPriceHint": "Obligacje skarbowe kupuje się po 100 zł za sztukę."
     },
     "save": "Zapisz transakcję",
     "add": "Dodaj transakcję",
@@ -473,7 +491,8 @@
     "NYSE": "NYSE",
     "NASDAQ": "NASDAQ",
     "CRYPTO": "Kryptowaluty",
-    "OTHER": "Inny"
+    "OTHER": "Inny",
+    "SKARB": "Obligacje skarbowe"
   },
   "transactionTypes": {
     "BUY": "Kupno",
@@ -515,7 +534,8 @@
       "source": "Źródło",
       "sources": {
         "YAHOO": "Yahoo Finance",
-        "MANUAL": "ręcznie"
+        "MANUAL": "ręcznie",
+        "TREASURY": "z warunków emisji"
       },
       "delete": "Usuń",
       "deleteLabel": "Usuń kurs z dnia {date}"
@@ -528,5 +548,50 @@
     "CRYPTO": "Kryptowaluty",
     "CASH": "Gotówka",
     "INDEX": "Indeksy"
+  },
+  "bonds": {
+    "title": "Obligacje skarbowe",
+    "intro": "Detaliczne obligacje oszczędnościowe nie mają notowań. Ich wartość jest wyliczana z warunków emisji, osobno dla każdego zakupu, bo odsetki naliczają się od dnia zakupu.",
+    "create": {
+      "title": "Nowa seria obligacji",
+      "series": "Seria",
+      "seriesHint": "Symbol z potwierdzenia zakupu, na przykład EDO1135.",
+      "firstRate": "Oprocentowanie w pierwszym okresie (%)",
+      "firstRateHint": "Roczna stopa z listu emisyjnego, na przykład 5,35.",
+      "margin": "Marża (%)",
+      "marginHint": "Opcjonalnie: dla obligacji o zmiennym oprocentowaniu.",
+      "submit": "Dodaj serię"
+    },
+    "detail": {
+      "termsTitle": "Warunki emisji",
+      "term": "Okres oszczędzania",
+      "termValue": "{months, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesiąca}}",
+      "interest": "Odsetki",
+      "interestOptions": {
+        "capitalize": "kapitalizowane co roku, wypłacane przy wykupie",
+        "payoutMonthly": "wypłacane co miesiąc",
+        "payoutYearly": "wypłacane co roku",
+        "payoutAtMaturity": "wypłacane przy wykupie"
+      },
+      "firstRate": "Oprocentowanie w pierwszym okresie",
+      "margin": "Marża",
+      "fee": "Opłata za przedterminowy wykup",
+      "feeValue": "{fee} zł od sztuki (zakupy od 1 września 2024 r.)",
+      "ratesTitle": "Oprocentowanie kolejnych okresów",
+      "ratesIntro": {
+        "inflation": "Od drugiego roku oprocentowanie to inflacja ogłoszona przez GUS plus marża. Ministerstwo Finansów podaje je przed każdym rocznym okresem. Wpisz je tutaj, gdy zostanie ogłoszone.",
+        "nbpReferenceRate": "Od drugiego miesiąca oprocentowanie to stopa referencyjna NBP plus marża. Wpisz je tutaj, gdy się zmieni; okresy bez wpisu przyjmują ostatnią znaną wartość."
+      },
+      "ratesEstimate": "Dopóki oprocentowanie okresu nie jest wpisane, wycena przyjmuje ostatnie znane i jest oznaczona jako szacunek.",
+      "fixedRate": "Oprocentowanie jest stałe przez cały okres oszczędzania.",
+      "period": "Okres odsetkowy",
+      "periodOption": "Okres {number}",
+      "rate": "Oprocentowanie (%)",
+      "saveRate": "Zapisz oprocentowanie",
+      "ratesCaption": "Wpisane oprocentowanie kolejnych okresów",
+      "noRates": "Nie wpisano jeszcze oprocentowania kolejnych okresów.",
+      "deleteRate": "Usuń",
+      "deleteRateLabel": "Usuń oprocentowanie okresu {number}"
+    }
   }
 }

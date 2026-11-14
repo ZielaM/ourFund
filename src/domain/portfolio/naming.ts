@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isCurrency } from "./currencies";
-import { MARKETS } from "./markets";
+import { LISTED_MARKETS } from "./markets";
 
 export const ACCOUNT_TYPES = ["STANDARD", "IKE", "IKZE", "OKI"] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
@@ -46,7 +46,7 @@ export const instrumentInputSchema = z.object({
     .string("required")
     .transform((raw) => raw.trim().toUpperCase())
     .pipe(z.string().min(1, "required").regex(SYMBOL_PATTERN, "symbol.invalid")),
-  market: z.enum(MARKETS, "required"),
+  market: z.enum(LISTED_MARKETS, "required"),
   name: name(INSTRUMENT_NAME_MAX_LENGTH),
   type: z.enum(INSTRUMENT_TYPES, "required"),
   currency: z

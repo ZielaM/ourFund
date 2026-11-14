@@ -4,7 +4,7 @@
 
 Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamiany u siebie w Dockerze.
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości. Obligacje skarbowe, import z brokerów i podatki powstają w kolejnych etapach.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, a także detaliczne obligacje skarbowe wyceniane z warunków emisji. Import z brokerów i podatki powstają w kolejnych etapach.
 
 ## Założenia
 
@@ -41,6 +41,7 @@ Każda instancja pobiera dane samodzielnie, na własny użytek jej użytkownikó
 - **Notowania**: Yahoo Finance. To interfejs nieoficjalny: może przestać działać albo zmienić się bez zapowiedzi, a warunki korzystania z serwisu Yahoo dopuszczają go wyłącznie do użytku osobistego. Symbol notowań ustala się automatycznie (np. `CDR.WA` dla GPW) i można go zmienić w szczegółach instrumentu.
 - **Benchmark**: dowolny instrument z katalogu. Yahoo Finance nie udostępnia historii indeksów GPW (WIG, WIG20), dlatego dla polskiego rynku benchmarkiem powinien być ETF na indeks, np. `ETFBW20TR` (WIG20TR). Indeksy zagraniczne działają po podaniu symbolu, np. `^GSPC` dla S&P 500.
 - **Kursy wpisane ręcznie** mają zawsze pierwszeństwo przed pobranymi. Instrument można też w całości przełączyć na kursy ręczne.
+- **Detaliczne obligacje skarbowe** (OTS, ROR, DOR, TOS, COI, EDO, ROS, ROD) nie mają notowań i nie są skądkolwiek pobierane. Ich wartość jest wyliczana z warunków emisji, osobno dla każdego zakupu: odsetki narosłe od dnia zakupu, coroczna kapitalizacja albo wypłata odsetek. Dodając serię, podajesz jej symbol (np. `EDO1135`), oprocentowanie pierwszego okresu i marżę z listu emisyjnego. Dla obligacji o zmiennym oprocentowaniu stopę kolejnych okresów wpisuje się ręcznie po jej ogłoszeniu, bo Ministerstwo Finansów nie udostępnia tych danych w postaci nadającej się do automatycznego pobierania. Dopóki stopy bieżącego okresu brakuje, wycena przyjmuje ostatnią znaną i jest oznaczona jako szacunek.
 
 Notowania odświeżają się codziennie o 18:30 i 23:15 czasu polskiego oraz na żądanie (przycisk „Odśwież notowania”). Ustawienie `MARKET_DATA=off` całkowicie wyłącza połączenia z internetem.
 

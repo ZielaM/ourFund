@@ -24,6 +24,8 @@ import type { InstrumentType } from "@/domain/portfolio/naming";
 import { formatDate, formatPrice } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
+import { BondTerms } from "@/components/bonds/bond-terms";
+import { getBond } from "@/server/bonds/bonds";
 import { getInstrument, listPrices } from "@/server/market-data/prices";
 import {
   deleteManualPriceAction,
@@ -46,7 +48,8 @@ export default async function InstrumentPage({ params }: PageProps<"/instruments
     notFound();
   }
 
-  const [prices, t, tTypes, tMarkets] = await Promise.all([
+  const [bond, prices, t, tTypes, tMarkets] = await Promise.all([
+    getBond(db, instrument.id),
     listPrices(db, instrument.id),
     getTranslations("instrument"),
     getTranslations("instrumentTypes"),
@@ -70,116 +73,124 @@ export default async function InstrumentPage({ params }: PageProps<"/instruments
         </p>
       </div>
 
-      <section aria-labelledby="source-title" className="mt-10 flex max-w-sm flex-col gap-5">
-        <h2 id="source-title" className="text-xl font-semibold">
-          {t("source.title")}
-        </h2>
-        <ActionForm action={updateQuoteSettingsAction.bind(null, instrument.id)}>
-          <SelectField
-            name="priceSource"
-            label={t("source.label")}
-            defaultValue={instrument.priceSource}
-          >
-            {PRICE_SOURCES.map((source) => (
-              <option key={source} value={source}>
-                {t(`source.options.${source}`)}
-              </option>
-            ))}
-          </SelectField>
-          <TextField
-            name="quoteSymbol"
-            label={t("source.quoteSymbol")}
-            hint={
-              derivedSymbol
-                ? t("source.hintDefault", { symbol: derivedSymbol })
-                : t("source.hintRequired")
-            }
-            defaultValue={instrument.quoteSymbol ?? undefined}
-            autoCapitalize="characters"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <SubmitButton className="self-start">{t("source.save")}</SubmitButton>
-        </ActionForm>
-      </section>
-
-      <section aria-labelledby="manual-title" className="mt-12 flex max-w-sm flex-col gap-5">
-        <div className="flex flex-col gap-1">
-          <h2 id="manual-title" className="text-xl font-semibold">
-            {t("manual.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">{t("manual.intro")}</p>
-        </div>
-        <ActionForm action={setManualPriceAction.bind(null, instrument.id)}>
-          <TextField
-            name="date"
-            type="date"
-            label={t("manual.date")}
-            defaultValue={todayInWarsaw(new Date())}
-            required
-          />
-          <TextField
-            name="close"
-            label={t("manual.close", { currency: instrument.currency })}
-            inputMode="decimal"
-            autoComplete="off"
-            required
-          />
-          <SubmitButton className="self-start">{t("manual.submit")}</SubmitButton>
-        </ActionForm>
-      </section>
-
-      <section aria-labelledby="prices-title" className="mt-12 flex flex-col gap-4">
-        <h2 id="prices-title" className="text-xl font-semibold">
-          {t("prices.title")}
-        </h2>
-        {prices.length === 0 ? (
-          <p className="text-muted-foreground">{t("prices.empty")}</p>
-        ) : (
-          <DataTable className="max-w-xl">
-            <Table>
-              <TableCaption className="sr-only">{t("prices.caption")}</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("prices.date")}</TableHead>
-                  <TableHead className="text-right">{t("prices.close")}</TableHead>
-                  <TableHead>{t("prices.source")}</TableHead>
-                  <TableHead>
-                    <span className="sr-only">{t("prices.delete")}</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {prices.map((price) => (
-                  <TableRow key={price.date}>
-                    <TableCell className="tabular-nums">{formatDate(price.date)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatPrice(price.close)} {instrument.currency}
-                    </TableCell>
-                    <TableCell>{t(`prices.sources.${price.source}`)}</TableCell>
-                    <TableCell className="text-right">
-                      {price.source === "MANUAL" ? (
-                        <ActionForm
-                          action={deleteManualPriceAction.bind(null, instrument.id, price.date)}
-                          className="items-end gap-1"
-                        >
-                          <button
-                            type="submit"
-                            aria-label={t("prices.deleteLabel", { date: formatDate(price.date) })}
-                            className="cursor-pointer underline underline-offset-4"
-                          >
-                            {t("prices.delete")}
-                          </button>
-                        </ActionForm>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
+      {bond ? (
+        <BondTerms bond={bond} />
+      ) : (
+        <>
+          <section aria-labelledby="source-title" className="mt-10 flex max-w-sm flex-col gap-5">
+            <h2 id="source-title" className="text-xl font-semibold">
+              {t("source.title")}
+            </h2>
+            <ActionForm action={updateQuoteSettingsAction.bind(null, instrument.id)}>
+              <SelectField
+                name="priceSource"
+                label={t("source.label")}
+                defaultValue={instrument.priceSource}
+              >
+                {PRICE_SOURCES.map((source) => (
+                  <option key={source} value={source}>
+                    {t(`source.options.${source}`)}
+                  </option>
                 ))}
-              </TableBody>
-            </Table>
-          </DataTable>
-        )}
-      </section>
+              </SelectField>
+              <TextField
+                name="quoteSymbol"
+                label={t("source.quoteSymbol")}
+                hint={
+                  derivedSymbol
+                    ? t("source.hintDefault", { symbol: derivedSymbol })
+                    : t("source.hintRequired")
+                }
+                defaultValue={instrument.quoteSymbol ?? undefined}
+                autoCapitalize="characters"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <SubmitButton className="self-start">{t("source.save")}</SubmitButton>
+            </ActionForm>
+          </section>
+
+          <section aria-labelledby="manual-title" className="mt-12 flex max-w-sm flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <h2 id="manual-title" className="text-xl font-semibold">
+                {t("manual.title")}
+              </h2>
+              <p className="text-sm text-muted-foreground">{t("manual.intro")}</p>
+            </div>
+            <ActionForm action={setManualPriceAction.bind(null, instrument.id)}>
+              <TextField
+                name="date"
+                type="date"
+                label={t("manual.date")}
+                defaultValue={todayInWarsaw(new Date())}
+                required
+              />
+              <TextField
+                name="close"
+                label={t("manual.close", { currency: instrument.currency })}
+                inputMode="decimal"
+                autoComplete="off"
+                required
+              />
+              <SubmitButton className="self-start">{t("manual.submit")}</SubmitButton>
+            </ActionForm>
+          </section>
+
+          <section aria-labelledby="prices-title" className="mt-12 flex flex-col gap-4">
+            <h2 id="prices-title" className="text-xl font-semibold">
+              {t("prices.title")}
+            </h2>
+            {prices.length === 0 ? (
+              <p className="text-muted-foreground">{t("prices.empty")}</p>
+            ) : (
+              <DataTable className="max-w-xl">
+                <Table>
+                  <TableCaption className="sr-only">{t("prices.caption")}</TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("prices.date")}</TableHead>
+                      <TableHead className="text-right">{t("prices.close")}</TableHead>
+                      <TableHead>{t("prices.source")}</TableHead>
+                      <TableHead>
+                        <span className="sr-only">{t("prices.delete")}</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {prices.map((price) => (
+                      <TableRow key={price.date}>
+                        <TableCell className="tabular-nums">{formatDate(price.date)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatPrice(price.close)} {instrument.currency}
+                        </TableCell>
+                        <TableCell>{t(`prices.sources.${price.source}`)}</TableCell>
+                        <TableCell className="text-right">
+                          {price.source === "MANUAL" ? (
+                            <ActionForm
+                              action={deleteManualPriceAction.bind(null, instrument.id, price.date)}
+                              className="items-end gap-1"
+                            >
+                              <button
+                                type="submit"
+                                aria-label={t("prices.deleteLabel", {
+                                  date: formatDate(price.date),
+                                })}
+                                className="cursor-pointer underline underline-offset-4"
+                              >
+                                {t("prices.delete")}
+                              </button>
+                            </ActionForm>
+                          ) : null}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </DataTable>
+            )}
+          </section>
+        </>
+      )}
     </>
   );
 }

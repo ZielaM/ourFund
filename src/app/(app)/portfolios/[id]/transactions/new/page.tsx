@@ -7,6 +7,7 @@ import { SubmitButton } from "@/components/form/submit-button";
 import { PageTitle } from "@/components/layout/page-title";
 import { TransactionFields } from "@/components/portfolio/transaction-fields";
 import { CURRENCIES } from "@/domain/portfolio/currencies";
+import { TREASURY_MARKET } from "@/domain/portfolio/markets";
 import { isTradable } from "@/domain/portfolio/naming";
 import { todayInWarsaw } from "@/domain/portfolio/dates";
 import { requireUser } from "@/server/auth/current-user";
@@ -35,7 +36,12 @@ export default async function NewTransactionPage({
     redirect(`/portfolios/${portfolio.id}/settings`);
   }
 
-  const instruments = (await listInstruments(db)).filter(({ type }) => isTradable(type));
+  const instruments = (await listInstruments(db))
+    .filter(({ type }) => isTradable(type))
+    .map((instrument) => ({
+      ...instrument,
+      treasuryBond: instrument.market === TREASURY_MARKET,
+    }));
   const t = await getTranslations("transaction");
   const portfolioHref = `/portfolios/${portfolio.id}`;
 

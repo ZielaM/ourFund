@@ -74,7 +74,11 @@ export function HoldingsTable({ holdings }: { holdings: ValuedHolding[] }) {
                     <>
                       {formatPrice(price.close)} {instrument.currency}
                       <span className="block text-xs text-muted-foreground">
-                        {price.fromTrade ? t("priceFromTrade") : formatDate(price.date)}
+                        {price.estimated
+                          ? t("estimated")
+                          : price.fromTrade
+                            ? t("priceFromTrade")
+                            : formatDate(price.date)}
                       </span>
                     </>
                   ) : (

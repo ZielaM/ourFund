@@ -147,6 +147,7 @@ model Instrument {
   transactions Transaction[]
   prices       Price[]
   benchmarkFor Portfolio[]   @relation("PortfolioBenchmark")
+  bondSeries   BondSeries?
 
   @@unique([symbol, market])
   @@map("instruments")
@@ -204,6 +205,8 @@ model Transaction {
 enum PriceSource {
   YAHOO
   MANUAL
+  /// Retail treasury bonds: no quotes, the value follows from the terms of the series.
+  TREASURY
 
   @@map("price_source")
 }
@@ -231,4 +234,46 @@ model FxRate {
 
   @@id([currency, date])
   @@map("fx_rates")
+}
+
+enum BondKind {
+  OTS
+  ROR
+  DOR
+  TOS
+  COI
+  EDO
+  ROS
+  ROD
+
+  @@map("bond_kind")
+}
+
+/// Terms of a retail treasury bond series (obligacje oszczędnościowe), e.g. EDO1135.
+model BondSeries {
+  instrumentId String   @id @map("instrument_id") @db.Uuid
+  kind         BondKind
+  /// Yearly rate of the first interest period, in percent (5.35 for 5.35%).
+  firstRate    Decimal  @map("first_rate") @db.Decimal(7, 4)
+  /// Margin over inflation or the NBP reference rate in later periods, in percent.
+  margin       Decimal? @db.Decimal(7, 4)
+
+  instrument Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  rates      BondRate[]
+
+  @@map("bond_series")
+}
+
+/// The announced yearly rate of a later interest period of a bond series.
+model BondRate {
+  instrumentId String  @map("instrument_id") @db.Uuid
+  /// 2 is the second period.
+  period       Int
+  /// In percent.
+  rate         Decimal @db.Decimal(7, 4)
+
+  series BondSeries @relation(fields: [instrumentId], references: [instrumentId], onDelete: Cascade)
+
+  @@id([instrumentId, period])
+  @@map("bond_rates")
 }

@@ -83,7 +83,9 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
             <PortfolioSummary valuation={valuation} />
           </div>
 
-          {valuation.missing.rates.length > 0 || valuation.missing.marketPrices.length > 0 ? (
+          {valuation.missing.rates.length > 0 ||
+          valuation.missing.marketPrices.length > 0 ||
+          valuation.missing.bondRates.length > 0 ? (
             <div className="mt-6 flex max-w-prose flex-col gap-1 text-sm text-muted-foreground">
               {valuation.missing.rates.length > 0 ? (
                 <p>
@@ -94,6 +96,13 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
                 <p>
                   {t("summary.missingPrices", {
                     symbols: valuation.missing.marketPrices.join(", "),
+                  })}
+                </p>
+              ) : null}
+              {valuation.missing.bondRates.length > 0 ? (
+                <p>
+                  {t("summary.missingBondRates", {
+                    symbols: valuation.missing.bondRates.join(", "),
                   })}
                 </p>
               ) : null}

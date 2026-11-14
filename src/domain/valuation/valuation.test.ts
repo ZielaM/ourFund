@@ -194,6 +194,58 @@ describe("valuePosition: instrument in a foreign currency", () => {
   });
 });
 
+describe("valuePosition: price depending on the purchase day", () => {
+  // Like a retail treasury bond: worth 100 plus one złoty for every month held.
+  const accruing: PriceOn = (_instrumentId, date, acquiredOn) => {
+    if (!acquiredOn) return null;
+    const months =
+      (Number(date.slice(0, 4)) - Number(acquiredOn.slice(0, 4))) * 12 +
+      Number(date.slice(5, 7)) -
+      Number(acquiredOn.slice(5, 7));
+    return { date, close: d(100 + months), fromTrade: false };
+  };
+  const position = positionOf([
+    trade("BUY", "2026-01-13", "10", "100"),
+    trade("BUY", "2026-09-13", "30", "100"),
+  ]);
+
+  it("values each lot at its own price", () => {
+    const result = valuePosition(position, "PLN", today, accruing, noFx);
+
+    // 10 × 110 + 30 × 102
+    expect(fixed(result.value)).toBe("4160");
+    expect(fixed(result.cost)).toBe("4000");
+    expect(fixed(result.unrealized)).toBe("160");
+    expect(fixed(result.priceEffect)).toBe("160");
+  });
+
+  it("shows the average price of the lots, weighted by quantity", () => {
+    const result = valuePosition(position, "PLN", today, accruing, noFx);
+
+    expect(fixed(result.price?.close)).toBe("104");
+  });
+
+  it("is unknown as a whole when one lot has no price", () => {
+    const onlyOldLots: PriceOn = (id, date, acquiredOn) =>
+      acquiredOn === "2026-01-13" ? accruing(id, date, acquiredOn) : null;
+
+    const result = valuePosition(position, "PLN", today, onlyOldLots, noFx);
+
+    expect(result.value).toBeNull();
+    expect(result.price).toBeNull();
+  });
+
+  it("passes on that a price is an estimate", () => {
+    const estimated: PriceOn = (id, date, acquiredOn) => ({
+      ...accruing(id, date, acquiredOn)!,
+      estimated: acquiredOn === "2026-01-13" || undefined,
+    });
+
+    expect(valuePosition(position, "PLN", today, estimated, noFx).price?.estimated).toBe(true);
+    expect(valuePosition(position, "PLN", today, accruing, noFx).price?.estimated).toBeUndefined();
+  });
+});
+
 describe("valuePosition: closed position", () => {
   it("has no value or cost, only its realized result, and needs no price", () => {
     const position = positionOf([

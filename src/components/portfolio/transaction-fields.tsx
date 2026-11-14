@@ -13,7 +13,14 @@ export type TransactionFormValues = Partial<Record<string, string>>;
 
 type TransactionFieldsProps = {
   accounts: { id: string; name: string }[];
-  instruments: { id: string; symbol: string; name: string; currency: string }[];
+  instruments: {
+    id: string;
+    symbol: string;
+    name: string;
+    currency: string;
+    /** Retail treasury bonds always cost 100 PLN a piece; the form says so. */
+    treasuryBond?: boolean;
+  }[];
   currencies: readonly string[];
   /** Values the form starts with: today's date for a new transaction, stored values when editing. */
   initial: TransactionFormValues;
@@ -146,6 +153,7 @@ export function TransactionFields({
           <FormField
             name="price"
             label={instrument ? t("priceIn", { currency: instrument.currency }) : t("price")}
+            hint={instrument?.treasuryBond ? t("bondPriceHint") : undefined}
             defaultValue={value("price")}
             error={field.error("price")}
             {...decimalProps}
