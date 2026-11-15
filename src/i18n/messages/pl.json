@@ -82,6 +82,18 @@
       "submit": "Zmień hasło"
     }
   },
+  "theme": {
+    "title": "Wygląd",
+    "intro": "Jasny albo ciemny motyw. Wybór jest zapamiętywany w tej przeglądarce.",
+    "legend": "Motyw",
+    "choices": {
+      "system": "Zgodnie z ustawieniami systemu",
+      "light": "Jasny",
+      "dark": "Ciemny"
+    },
+    "useDark": "Włącz ciemny motyw",
+    "useLight": "Włącz jasny motyw"
+  },
   "roles": {
     "ADMIN": "Administrator",
     "USER": "Użytkownik"

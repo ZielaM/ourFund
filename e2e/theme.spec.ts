@@ -34,3 +34,29 @@ test("wygląd podąża za jasnym lub ciemnym motywem systemu", async ({ browser 
   expect(dark.button).toBe("rgb(169, 192, 240)");
   expect(dark.buttonText).toBe("rgb(15, 21, 36)");
 });
+
+test("motyw można przełączyć przyciskiem i wybór zostaje po odświeżeniu", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/settings");
+  const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await expect(page.getByRole("radio", { name: "Zgodnie z ustawieniami systemu" })).toBeChecked();
+  expect(await background()).toBe("rgb(243, 245, 249)");
+
+  await page.getByRole("button", { name: "Włącz ciemny motyw" }).click();
+  await expect(page.getByRole("radio", { name: "Ciemny" })).toBeChecked();
+  expect(await background()).toBe("rgb(15, 21, 36)");
+
+  // The choice is applied before the first paint of the next page load.
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Włącz jasny motyw" })).toBeVisible();
+  expect(await background()).toBe("rgb(15, 21, 36)");
+
+  // Back to the system setting: light first, and dark as soon as the system switches.
+  await page.getByRole("radio", { name: "Zgodnie z ustawieniami systemu" }).check();
+  expect(await background()).toBe("rgb(243, 245, 249)");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect.poll(background).toBe("rgb(15, 21, 36)");
+
+  await page.getByRole("radio", { name: "Jasny" }).check();
+  expect(await background()).toBe("rgb(243, 245, 249)");
+});

@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* `dark:` in vendored components follows the same attribute as the colour tokens. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -89,54 +92,54 @@
   --sidebar-border: #d3dae6;
   --sidebar-ring: #1b2f5e;
   /* Lets the browser draw its own controls (date pickers, scrollbars) to match. */
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 /*
- * The same book read at night: light ink on deep navy paper. It follows the system setting;
- * Tailwind's `dark:` variant uses the same media query, so vendored components agree.
+ * The same book read at night: light ink on deep navy paper. An inline script in <head>
+ * (`THEME_SCRIPT`) puts `data-theme` on <html> before the first paint: the user's saved choice,
+ * or the system setting when there is none.
  */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f1524;
-    --foreground: #e6eaf2;
-    --card: #172033;
-    --card-foreground: #e6eaf2;
-    --popover: #1b2539;
-    --popover-foreground: #e6eaf2;
-    /* On dark paper the ink of buttons and rules turns pale, with dark text on it. */
-    --primary: #a9c0f0;
-    --primary-foreground: #0f1524;
-    --secondary: #222d45;
-    --secondary-foreground: #e6eaf2;
-    --muted: #1d2740;
-    --muted-foreground: #9aa6bf;
-    --accent: #26324d;
-    --accent-foreground: #e6eaf2;
-    --destructive: #f2857b;
-    --border: #2a3550;
-    --input: #3d4a69;
-    --ring: #a9c0f0;
-    /* Checked with the data-viz palette validator against the card surface. */
-    --chart-value: #5f8eea;
-    --chart-context: #687084;
-    --chart-grid: #232d44;
-    --gain: #5cc48a;
-    --loss: #f2857b;
-    --chart-1: #a9c0f0;
-    --chart-2: #7ea2ee;
-    --chart-3: #d9ad55;
-    --chart-4: #5cc48a;
-    --chart-5: #b39ae0;
-    --sidebar: #172033;
-    --sidebar-foreground: #e6eaf2;
-    --sidebar-primary: #a9c0f0;
-    --sidebar-primary-foreground: #0f1524;
-    --sidebar-accent: #26324d;
-    --sidebar-accent-foreground: #e6eaf2;
-    --sidebar-border: #2a3550;
-    --sidebar-ring: #a9c0f0;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0f1524;
+  --foreground: #e6eaf2;
+  --card: #172033;
+  --card-foreground: #e6eaf2;
+  --popover: #1b2539;
+  --popover-foreground: #e6eaf2;
+  /* On dark paper the ink of buttons and rules turns pale, with dark text on it. */
+  --primary: #a9c0f0;
+  --primary-foreground: #0f1524;
+  --secondary: #222d45;
+  --secondary-foreground: #e6eaf2;
+  --muted: #1d2740;
+  --muted-foreground: #9aa6bf;
+  --accent: #26324d;
+  --accent-foreground: #e6eaf2;
+  --destructive: #f2857b;
+  --border: #2a3550;
+  --input: #3d4a69;
+  --ring: #a9c0f0;
+  /* Checked with the data-viz palette validator against the card surface. */
+  --chart-value: #5f8eea;
+  --chart-context: #687084;
+  --chart-grid: #232d44;
+  --gain: #5cc48a;
+  --loss: #f2857b;
+  --chart-1: #a9c0f0;
+  --chart-2: #7ea2ee;
+  --chart-3: #d9ad55;
+  --chart-4: #5cc48a;
+  --chart-5: #b39ae0;
+  --sidebar: #172033;
+  --sidebar-foreground: #e6eaf2;
+  --sidebar-primary: #a9c0f0;
+  --sidebar-primary-foreground: #0f1524;
+  --sidebar-accent: #26324d;
+  --sidebar-accent-foreground: #e6eaf2;
+  --sidebar-border: #2a3550;
+  --sidebar-ring: #a9c0f0;
 }
 
 @layer base {

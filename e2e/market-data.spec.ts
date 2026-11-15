@@ -140,6 +140,13 @@ test("portfel porównuje się z wybranym benchmarkiem", async ({ page }) => {
   await page.getByRole("button", { name: "Dodaj instrument" }).click();
   await expect(page.getByText("Instrument IDX został dodany.")).toBeVisible();
 
+  // A refresh fetches every benchmark, also when another test asks for it. Until this test
+  // refreshes by itself, the index is kept out of reach of those other refreshes.
+  await openInstrument(page, "IDX");
+  await field(page, "Skąd brać kursy").selectOption({ label: "Wpisuję ręcznie" });
+  await page.getByRole("button", { name: "Zapisz źródło" }).click();
+  await expect(page.getByText("Źródło notowań zostało zapisane.")).toBeVisible();
+
   await page.goto("/");
   await page.getByRole("link", { name: "Otwórz portfel Notowania" }).click();
   await expect(page.getByRole("heading", { name: "Na tle benchmarku" })).toHaveCount(0);
@@ -158,6 +165,11 @@ test("portfel porównuje się z wybranym benchmarkiem", async ({ page }) => {
   // Until quotes are fetched there is nothing to compare with.
   await page.getByRole("link", { name: "Wróć do portfela" }).click();
   await expect(page.getByText(/Brak notowań benchmarku IDX/)).toBeVisible();
+
+  await openInstrument(page, "IDX");
+  await field(page, "Skąd brać kursy").selectOption({ label: "Automatycznie (Yahoo Finance)" });
+  await page.getByRole("button", { name: "Zapisz źródło" }).click();
+  await expect(page.getByText("Źródło notowań zostało zapisane.")).toBeVisible();
 
   await page.goto("/instruments");
   await page.getByRole("button", { name: "Odśwież notowania" }).click();

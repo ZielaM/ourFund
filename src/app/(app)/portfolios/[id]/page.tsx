@@ -65,9 +65,30 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <PageTitle>{portfolio.name}</PageTitle>
-        <Link href={settingsHref} className="text-sm underline underline-offset-4">
-          {t("settings")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {portfolio.accounts.length > 0 ? (
+            <>
+              <Link
+                href={`/portfolios/${portfolio.id}/transactions/new`}
+                className={buttonVariants({ className: "h-10 px-4" })}
+              >
+                {t("transactions.add")}
+              </Link>
+              <Link
+                href={`/portfolios/${portfolio.id}/import`}
+                className={buttonVariants({
+                  variant: "outline",
+                  className: "h-10 border-input bg-card px-4",
+                })}
+              >
+                {tImport("link")}
+              </Link>
+            </>
+          ) : null}
+          <Link href={settingsHref} className="text-sm underline underline-offset-4">
+            {t("settings")}
+          </Link>
+        </div>
       </div>
 
       {portfolio.accounts.length === 0 ? (
@@ -272,25 +293,9 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
           ) : null}
 
           <section aria-labelledby="transactions-title" className="mt-12 flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <h2 id="transactions-title" className="text-xl font-semibold">
-                {t("transactions.title")}
-              </h2>
-              <div className="flex flex-wrap items-center gap-4">
-                <Link
-                  href={`/portfolios/${portfolio.id}/import`}
-                  className="text-sm underline underline-offset-4"
-                >
-                  {tImport("link")}
-                </Link>
-                <Link
-                  href={`/portfolios/${portfolio.id}/transactions/new`}
-                  className={buttonVariants({ className: "h-10 px-4" })}
-                >
-                  {t("transactions.add")}
-                </Link>
-              </div>
-            </div>
+            <h2 id="transactions-title" className="text-xl font-semibold">
+              {t("transactions.title")}
+            </h2>
             {transactions && transactions.length > 0 ? (
               <TransactionsTable transactions={transactions} />
             ) : (

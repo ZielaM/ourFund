@@ -15,7 +15,7 @@ The user interface is in Polish. Every text lives in one translation file (`src/
 - A web application (Next.js + TypeScript) with a PostgreSQL database, started with `docker compose`.
 - Local accounts only: your data stays on your server. There is no password reset by e-mail; the administrator sets a new password.
 - Built for Polish investors: the Warsaw Stock Exchange (GPW), retail treasury bonds, IKE / IKZE / OKI accounts, PIT-38.
-- A light and a dark look, chosen by the system setting.
+- A light and a dark theme. It follows the system setting by default; the button in the header or the "Ustawienia" (settings) page switches it.
 
 ## Running it
 
@@ -68,7 +68,7 @@ Quotes refresh every day at 18:30 and 23:15 Polish time, and on demand (the "OdÅ
 
 ## Import from XTB
 
-The portfolio page has a link "Importuj z XTB". It reads the account history report downloaded from xStation (an `.xlsx` file, one per account: PLN, EUR, USD, IKE):
+At the top of the portfolio page, next to "Dodaj transakcjÄ™", there is a button "Importuj z XTB" (shown once the portfolio has an account). It reads the account history report downloaded from xStation (an `.xlsx` file, one per account: PLN, EUR, USD, IKE):
 
 - it first shows a preview: how many operations would be added, which instruments would join the catalogue, which rows were left out and why; nothing is saved until you confirm,
 - it understands purchases and sales (fractional ones too), dividends with withholding tax, interest on idle cash, deposits, withdrawals and transfers to an IKE account,
