@@ -26,6 +26,8 @@ let accountId: string;
 const closes = (...pairs: [string, string][]): QuoteResult => ({
   ok: true,
   closes: pairs.map(([date, close]) => ({ date, close: new Decimal(close) })),
+  dividends: [],
+  splits: [],
 });
 const rates = (...pairs: [string, string][]): RatesResult => ({
   ok: true,
@@ -232,6 +234,123 @@ describe("refreshMarketData: prices", () => {
       ],
     });
     await expect(storedPrices(pkn)).resolves.toHaveLength(1);
+  });
+});
+
+describe("refreshMarketData: dividends and splits", () => {
+  const events = async (instrumentId: string) =>
+    (
+      await db.instrumentEvent.findMany({
+        where: { instrumentId },
+        orderBy: [{ date: "asc" }, { type: "asc" }],
+      })
+    ).map((event) => [
+      event.date.toISOString().slice(0, 10),
+      event.type,
+      new Decimal(event.value.toString()).toFixed(),
+    ]);
+  const withEvents = (
+    dividends: [string, string][],
+    splits: [string, string][],
+    ...pairs: [string, string][]
+  ): QuoteResult => ({
+    ok: true,
+    closes: pairs.map(([date, close]) => ({ date, close: new Decimal(close) })),
+    dividends: dividends.map(([date, amount]) => ({ date, amount: new Decimal(amount) })),
+    splits: splits.map(([date, ratio]) => ({ date, ratio: new Decimal(ratio) })),
+  });
+
+  it("stores the dividends and splits that come with the quotes", async () => {
+    const cdr = await instrument("CDR");
+    await bought(cdr, "2026-03-02");
+
+    await refreshMarketData(
+      db,
+      fakeProviders({
+        quotes: async () =>
+          withEvents([["2026-06-15", "1.5"]], [["2026-09-01", "2"]], ["2026-11-12", "100"]),
+      }),
+      options,
+    );
+
+    await expect(events(cdr)).resolves.toEqual([
+      ["2026-06-15", "DIVIDEND", "1.5"],
+      ["2026-09-01", "SPLIT", "2"],
+    ]);
+  });
+
+  it("fetches the whole history once for an instrument stored before events were known", async () => {
+    const cdr = await instrument("CDR");
+    await bought(cdr, "2026-11-02");
+    // Prices stored by an earlier version: adjusted for a split that is not recorded anywhere.
+    await db.price.createMany({
+      data: [
+        { instrumentId: cdr, date: new Date("2026-10-26"), close: "50", source: "YAHOO" },
+        { instrumentId: cdr, date: new Date("2026-11-12"), close: "51", source: "YAHOO" },
+      ],
+    });
+    const providers = fakeProviders({
+      quotes: async () =>
+        withEvents([], [["2026-11-05", "2"]], ["2026-10-26", "100"], ["2026-11-12", "51"]),
+    });
+
+    await refreshMarketData(db, providers, options);
+    await refreshMarketData(db, providers, options);
+
+    expect(providers.quotes).toHaveBeenNthCalledWith(
+      1,
+      "CDR.WA",
+      "PLN",
+      "2026-10-26",
+      "2026-11-13",
+    );
+    expect(providers.quotes).toHaveBeenNthCalledWith(
+      2,
+      "CDR.WA",
+      "PLN",
+      "2026-11-07",
+      "2026-11-13",
+    );
+    await expect(storedPrices(cdr)).resolves.toEqual([
+      ["2026-10-26", "100", "YAHOO"],
+      ["2026-11-12", "51", "YAHOO"],
+    ]);
+  });
+
+  it("updates a corrected event and withdraws one the provider no longer reports", async () => {
+    const cdr = await instrument("CDR");
+    await bought(cdr, "2026-03-02");
+    await refreshMarketData(
+      db,
+      fakeProviders({
+        quotes: async () =>
+          withEvents(
+            [
+              ["2026-06-15", "1.5"],
+              ["2026-11-10", "9"],
+              ["2026-11-12", "2"],
+            ],
+            [],
+            ["2026-02-23", "100"],
+            ["2026-11-12", "100"],
+          ),
+      }),
+      options,
+    );
+
+    // The second run covers only the last days: the June dividend is outside and stays.
+    await refreshMarketData(
+      db,
+      fakeProviders({
+        quotes: async () => withEvents([["2026-11-12", "2.5"]], [], ["2026-11-13", "100"]),
+      }),
+      options,
+    );
+
+    await expect(events(cdr)).resolves.toEqual([
+      ["2026-06-15", "DIVIDEND", "1.5"],
+      ["2026-11-12", "DIVIDEND", "2.5"],
+    ]);
   });
 });
 

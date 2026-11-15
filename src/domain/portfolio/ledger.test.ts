@@ -513,6 +513,20 @@ describe("computeLedger: realizations and income events", () => {
     expect(fixed(realizations[0].quantity)).toBe("20");
   });
 
+  it("applies a split before the trades of its day, whenever it was recorded", () => {
+    // Bought on the split day at the new price, the split entered afterwards.
+    const { lots } = position([
+      buy("2026-01-10", "10", "100"),
+      buy("2026-02-01", "4", "50"),
+      { id: id(), type: "SPLIT", date: "2026-02-01", instrumentId: "CDR", splitRatio: d(2) },
+    ]);
+
+    expect(lots.map((lot) => [fixed(lot.quantity), fixed(lot.unitCost)])).toEqual([
+      ["20", "50"],
+      ["4", "50"],
+    ]);
+  });
+
   it("lists dividends and coupons with their dates, gross amounts and tax", () => {
     const dividend: LedgerEntry = {
       id: id(),

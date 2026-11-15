@@ -166,12 +166,19 @@ export function cashFlow(entry: LedgerEntry): { currency: string; amount: Decima
  * Replays the history of ONE account and returns what it holds now.
  *
  * Entries are processed by date; entries on the same day keep the order in which they were
- * given (callers pass them in the order they were recorded).
+ * given (callers pass them in the order they were recorded). A split is the exception: it
+ * takes effect before the market opens, so it comes first on its day whenever it was recorded.
  */
 export function computeLedger(entries: readonly LedgerEntry[]): Ledger {
+  const splitFirst = (entry: LedgerEntry) => (entry.type === "SPLIT" ? 0 : 1);
   const ordered = entries
     .map((entry, index) => ({ entry, index }))
-    .sort((a, b) => a.entry.date.localeCompare(b.entry.date) || a.index - b.index)
+    .sort(
+      (a, b) =>
+        a.entry.date.localeCompare(b.entry.date) ||
+        splitFirst(a.entry) - splitFirst(b.entry) ||
+        a.index - b.index,
+    )
     .map(({ entry }) => entry);
 
   const open = new Map<string, OpenPosition>();

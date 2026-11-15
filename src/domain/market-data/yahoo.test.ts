@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "@/domain/decimal";
-import { barDate, cleanClose, closesInCurrency, parseYahooChart } from "./yahoo";
+import {
+  barDate,
+  cleanClose,
+  closesInCurrency,
+  currencyScale,
+  parseYahooChart,
+  undoSplitAdjustment,
+} from "./yahoo";
 
 // Shapes and values taken from real responses of the chart endpoint.
 const warsaw = {
@@ -98,7 +105,13 @@ describe("parseYahooChart", () => {
       },
     };
 
-    expect(parseYahooChart(empty)).toEqual({ ok: true, currency: "PLN", closes: [] });
+    expect(parseYahooChart(empty)).toEqual({
+      ok: true,
+      currency: "PLN",
+      closes: [],
+      dividends: [],
+      splits: [],
+    });
   });
 
   it("reports an unknown symbol", () => {
@@ -133,5 +146,118 @@ describe("closesInCurrency", () => {
     expect(closesInCurrency(sample, "USD", "PLN")).toBeNull();
     expect(closesInCurrency(sample, "GBp", "USD")).toBeNull();
     expect(closesInCurrency(sample, "GBP", "GBp")).toBeNull();
+  });
+});
+
+describe("dividends and splits", () => {
+  const at = (iso: string) => Date.parse(iso) / 1000;
+  // A 10:1 split on 10 June: Yahoo divides every earlier close and dividend by ten.
+  const split = {
+    chart: {
+      result: [
+        {
+          meta: { currency: "USD", gmtoffset: -14400 },
+          timestamp: [
+            at("2024-06-06T13:30:00Z"),
+            at("2024-06-07T13:30:00Z"),
+            at("2024-06-10T13:30:00Z"),
+            at("2024-06-11T13:30:00Z"),
+          ],
+          indicators: { quote: [{ close: [120.5, 121.25, 122.0, 121.0] }] },
+          events: {
+            dividends: {
+              a: { date: at("2024-06-05T13:30:00Z"), amount: 0.004 },
+              b: { date: at("2024-06-11T13:30:00Z"), amount: 0.01 },
+            },
+            splits: {
+              a: { date: at("2024-06-10T13:30:00Z"), numerator: 10, denominator: 1 },
+            },
+          },
+        },
+      ],
+      error: null,
+    },
+  };
+
+  function parsed(json: unknown) {
+    const chart = parseYahooChart(json);
+    if (!chart.ok) throw new Error(`expected a chart, got ${chart.reason}`);
+    return chart;
+  }
+
+  it("reads splits as new units per old unit, dated on the first day after the split", () => {
+    expect(parsed(split).splits.map(({ date, ratio }) => [date, ratio.toFixed()])).toEqual([
+      ["2024-06-10", "10"],
+    ]);
+  });
+
+  it("returns closes as they were traded: earlier ones are multiplied back by the ratio", () => {
+    expect(parsed(split).closes.map(({ date, close }) => [date, close.toFixed()])).toEqual([
+      ["2024-06-06", "1205"],
+      ["2024-06-07", "1212.5"],
+      ["2024-06-10", "122"],
+      ["2024-06-11", "121"],
+    ]);
+  });
+
+  it("returns dividends as they were paid", () => {
+    expect(parsed(split).dividends.map(({ date, amount }) => [date, amount.toFixed()])).toEqual([
+      ["2024-06-05", "0.04"],
+      ["2024-06-11", "0.01"],
+    ]);
+  });
+
+  it("reads a reverse split as a ratio below one", () => {
+    const reverse = structuredClone(split);
+    reverse.chart.result[0].events.splits.a = {
+      date: at("2024-06-10T13:30:00Z"),
+      numerator: 1,
+      denominator: 4,
+    };
+
+    const chart = parsed(reverse);
+    expect(chart.splits[0].ratio.toFixed()).toBe("0.25");
+    expect(chart.closes[0].close.toFixed()).toBe("30.125");
+  });
+
+  it("ignores splits that change nothing and events without a positive value", () => {
+    const noise = structuredClone(split);
+    noise.chart.result[0].events.splits.a.numerator = 1;
+    noise.chart.result[0].events.dividends.a.amount = 0;
+
+    const chart = parsed(noise);
+    expect(chart.splits).toEqual([]);
+    expect(chart.dividends).toHaveLength(1);
+    expect(chart.closes[0].close.toFixed()).toBe("120.5");
+  });
+
+  it("multiplies by every later split, not by earlier ones", () => {
+    const items = [
+      { date: "2026-01-10", value: new Decimal(3) },
+      { date: "2026-02-10", value: new Decimal(3) },
+      { date: "2026-03-10", value: new Decimal(3) },
+    ];
+    const splits = [
+      { date: "2026-02-01", ratio: new Decimal(2) },
+      { date: "2026-03-01", ratio: new Decimal(5) },
+    ];
+
+    const result = undoSplitAdjustment(
+      items,
+      splits,
+      (item) => item.value,
+      (item, value) => ({ ...item, value }),
+    );
+
+    expect(result.map((item) => item.value.toFixed())).toEqual(["30", "15", "3"]);
+  });
+});
+
+describe("currencyScale", () => {
+  it("is one for the same currency, a hundredth for pence, null otherwise", () => {
+    expect(currencyScale("PLN", "PLN")?.toFixed()).toBe("1");
+    expect(currencyScale("GBp", "GBP")?.toFixed()).toBe("0.01");
+    expect(currencyScale("GBX", "GBP")?.toFixed()).toBe("0.01");
+    expect(currencyScale("USD", "EUR")).toBeNull();
   });
 });

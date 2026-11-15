@@ -141,13 +141,20 @@ export async function refreshMarketData(
     }
 
     const stored = priceRange.get(instrument.id);
-    const range = fetchRange(
-      addDays(utcToIsoDate(since), -LEAD_DAYS),
-      stored?._min.date && stored._max.date
-        ? { min: utcToIsoDate(stored._min.date), max: utcToIsoDate(stored._max.date) }
-        : null,
-      today,
-    );
+    const wantFrom = addDays(utcToIsoDate(since), -LEAD_DAYS);
+    const eventsFrom = instrument.eventsFrom ? utcToIsoDate(instrument.eventsFrom) : null;
+    // Dividends and splits must be known for the whole period, and prices stored before
+    // they were (when splits were not undone) are replaced: both mean fetching everything.
+    const range =
+      !eventsFrom || eventsFrom > wantFrom
+        ? { from: wantFrom, to: today }
+        : fetchRange(
+            wantFrom,
+            stored?._min.date && stored._max.date
+              ? { min: utcToIsoDate(stored._min.date), max: utcToIsoDate(stored._max.date) }
+              : null,
+            today,
+          );
 
     if (index > 0) {
       await sleep(pauseMs);
@@ -181,6 +188,20 @@ export async function refreshMarketData(
         source: "YAHOO" as const,
       }));
 
+    const events = [
+      ...result.dividends.map((dividend) => ({
+        type: "DIVIDEND" as const,
+        date: isoDateToUtc(dividend.date),
+        value: dividend.amount.toFixed(),
+      })),
+      ...result.splits.map((split) => ({
+        type: "SPLIT" as const,
+        date: isoDateToUtc(split.date),
+        value: split.ratio.toFixed(),
+      })),
+    ];
+    const inRange = { gte: isoDateToUtc(range.from), lte: isoDateToUtc(range.to) };
+
     await db.$transaction([
       db.price.deleteMany({
         where: {
@@ -190,6 +211,33 @@ export async function refreshMarketData(
         },
       }),
       db.price.createMany({ data: rows }),
+      // Events the provider no longer reports for the period are withdrawn.
+      db.instrumentEvent.deleteMany({
+        where: {
+          instrumentId: instrument.id,
+          date: inRange,
+          NOT: events.map(({ type, date }) => ({ type, date })),
+        },
+      }),
+      ...events.map((event) =>
+        db.instrumentEvent.upsert({
+          where: {
+            instrumentId_type_date: {
+              instrumentId: instrument.id,
+              type: event.type,
+              date: event.date,
+            },
+          },
+          create: { instrumentId: instrument.id, ...event },
+          update: { value: event.value },
+        }),
+      ),
+      db.instrument.update({
+        where: { id: instrument.id },
+        data: {
+          eventsFrom: isoDateToUtc(eventsFrom && eventsFrom < range.from ? eventsFrom : range.from),
+        },
+      }),
     ]);
     report.instruments.updated += 1;
   }
