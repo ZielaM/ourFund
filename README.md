@@ -13,7 +13,7 @@ Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamian
 - Aplikacja webowa (Next.js + TypeScript) z bazą PostgreSQL, uruchamiana przez `docker compose`.
 - Tylko konta lokalne — dane zostają na Twoim serwerze. Nie ma odzyskiwania hasła e-mailem: nowe hasło nadaje administrator.
 - Polskie realia: GPW, detaliczne obligacje skarbowe, rachunki IKE / IKZE / OKI, PIT-38.
-- Interfejs jest po polsku i ma jasny oraz ciemny wygląd, wybierany według ustawień systemu.
+- Interfejs jest po polsku i ma jasny oraz ciemny motyw. Domyślnie idzie za ustawieniami systemu; przełącza go przycisk w nagłówku albo zakładka „Ustawienia”.
 
 ## Uruchomienie
 
@@ -66,7 +66,7 @@ Poprawność działania źródeł na żywo sprawdza polecenie `pnpm exec tsx scr
 
 ## Import z XTB
 
-Na stronie portfela jest odnośnik „Importuj z XTB”. Wczytuje on raport historii rachunku pobrany z xStation (plik `.xlsx`, osobny dla każdego rachunku: PLN, EUR, USD, IKE):
+U góry strony portfela, obok „Dodaj transakcję”, jest przycisk „Importuj z XTB” (pojawia się, gdy portfel ma rachunek). Wczytuje on raport historii rachunku pobrany z xStation (plik `.xlsx`, osobny dla każdego rachunku: PLN, EUR, USD, IKE):
 
 - najpierw pokazuje podgląd: ile operacji zostanie dodanych, jakie instrumenty trafią do katalogu, które wiersze pominięto i dlaczego; zapis następuje dopiero po zatwierdzeniu,
 - rozpoznaje kupna i sprzedaże (także ułamkowe), dywidendy z podatkiem u źródła, odsetki od wolnych środków, wpłaty, wypłaty i przelewy na IKE,

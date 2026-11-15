@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { PasswordForm } from "@/components/auth/password-form";
 import { PageTitle } from "@/components/layout/page-title";
+import { ThemeChoice } from "@/components/theme/theme-choice";
 import { requireUser } from "@/server/auth/current-user";
 import { changePasswordAction } from "./actions";
 
@@ -15,6 +16,7 @@ export default async function SettingsPage() {
   const t = await getTranslations("settings");
   const tRoles = await getTranslations("roles");
   const tExport = await getTranslations("export");
+  const tTheme = await getTranslations("theme");
 
   return (
     <>
@@ -44,6 +46,16 @@ export default async function SettingsPage() {
           submitLabel={t("password.submit")}
           askForCurrentPassword
         />
+      </section>
+
+      <section aria-labelledby="theme-title" className="mt-12 flex max-w-prose flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 id="theme-title" className="text-xl font-semibold">
+            {tTheme("title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{tTheme("intro")}</p>
+        </div>
+        <ThemeChoice />
       </section>
 
       <section aria-labelledby="export-title" className="mt-12 flex max-w-prose flex-col gap-4">

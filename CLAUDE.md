@@ -87,7 +87,9 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   shape changes. Text cells of the CSV go through `csvText` (formula injection), numbers
   through `csvNumber`.
 - Colours come only from the tokens in `src/app/globals.css`, which has a light and a dark set
-  switched by `prefers-color-scheme`; never hard-code a colour in a component. The dark chart
+  switched by `data-theme` on `<html>`; never hard-code a colour in a component. The attribute is
+  set before the first paint by the inline `THEME_SCRIPT` (`src/lib/theme.ts`): the choice saved
+  in the browser's `localStorage`, or the system setting. The server always renders "light". The dark chart
   colours were checked with the data-viz palette validator against the dark card surface.
 - `README.md` (Polish) and `README.en.md` describe the same things; change both together.
 - Imports (`src/domain/import/`, `src/server/importers/`, `/portfolios/[id]/import`): a parser

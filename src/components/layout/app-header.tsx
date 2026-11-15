@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { signOutAction } from "@/app/(auth)/actions";
 import { Wordmark } from "@/components/brand/wordmark";
+import { ThemeSwitch } from "@/components/theme/theme-switch";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { NavLink } from "./nav-link";
 
@@ -33,7 +34,7 @@ export async function AppHeader() {
 
   return (
     <HeaderFrame>
-      <nav aria-label={t("main")} className="flex items-center gap-5">
+      <nav aria-label={t("main")} className="flex flex-wrap items-center gap-x-5">
         <NavLink href="/" exact alsoActiveUnder={["/portfolios"]}>
           {t("dashboard")}
         </NavLink>
@@ -43,6 +44,7 @@ export async function AppHeader() {
         {user.role === "ADMIN" ? <NavLink href="/admin/users">{t("users")}</NavLink> : null}
       </nav>
       <div className="ml-auto flex items-center gap-5">
+        <ThemeSwitch />
         <NavLink href="/settings">
           <span className="sr-only">{t("signedInAs", { username: user.username })}. </span>
           <span aria-hidden="true">{user.username}</span>
