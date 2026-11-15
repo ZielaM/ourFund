@@ -6,7 +6,7 @@ Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamian
 
 [English version](README.en.md)
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji, historia dywidend i odsetek, zestawienie do PIT-38 eksport danych oraz import historii rachunku z XTB.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji, historia dywidend i odsetek, zestawienie do PIT-38, eksport danych oraz import historii rachunku z XTB.
 
 ## Założenia
 
@@ -36,7 +36,7 @@ docker compose pull app
 docker compose up -d --no-build
 ```
 
-Konkretną wersję wybiera zmienna `OURFUND_VERSION` (np. `0.1.0`); domyślnie pobierana jest najnowsza. Na innych architekturach, np. na Raspberry Pi, zbuduj obraz lokalnie poleceniem `docker compose up -d --build`.
+Konkretną wersję wybiera zmienna `OURFUND_VERSION` (np. `0.2.0`); domyślnie pobierana jest najnowsza. Na innych architekturach, np. na Raspberry Pi, zbuduj obraz lokalnie poleceniem `docker compose up -d --build`.
 
 Aktualizacja do nowej wersji to ponowne `docker compose pull app` i `docker compose up -d --no-build`. Migracje bazy wykonają się same; przed aktualizacją zrób kopię zapasową.
 
@@ -46,7 +46,7 @@ Opcjonalne ustawienia (plik `.env` obok `docker-compose.yml`):
 | -------------------- | --------- | -------------------------------------------------------------------------------------- |
 | `APP_PORT`           | `3000`    | Port, pod którym aplikacja jest dostępna                                               |
 | `ALLOW_REGISTRATION` | `false`   | `true` pozwala każdemu, kto ma dostęp do aplikacji, założyć konto                      |
-| `OURFUND_VERSION`    | `latest`  | Wersja gotowego obrazu, np. `0.1.0`                                                    |
+| `OURFUND_VERSION`    | `latest`  | Wersja gotowego obrazu, np. `0.2.0`                                                    |
 | `MARKET_DATA`        | `live`    | `off` wyłącza pobieranie notowań i kursów z internetu; kursy wpisuje się wtedy ręcznie |
 | `POSTGRES_PASSWORD`  | `ourfund` | Hasło bazy (tylko litery i cyfry); baza nie jest wystawiona poza sieć kontenerów       |
 
