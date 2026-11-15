@@ -191,11 +191,17 @@ model Transaction {
   /// SPLIT: new units per one old unit (4 for a 4:1 split, 0.1 for a 1:10 reverse split).
   splitRatio   Decimal?        @map("split_ratio") @db.Decimal(18, 8)
   note         String?
+  /// Set for imported entries: which importer created it (e.g. "XTB")...
+  source       String?
+  /// ...and the broker's own id of the operation, so the same file is never imported twice.
+  externalId   String?         @map("external_id")
   createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   account    Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
   instrument Instrument? @relation(fields: [instrumentId], references: [id], onDelete: Restrict)
+
+  @@unique([accountId, source, externalId])
 
   @@index([accountId, date])
   @@index([instrumentId])

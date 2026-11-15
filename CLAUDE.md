@@ -90,6 +90,16 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   switched by `prefers-color-scheme`; never hard-code a colour in a component. The dark chart
   colours were checked with the data-viz palette validator against the dark card surface.
 - `README.md` (Polish) and `README.en.md` describe the same things; change both together.
+- Imports (`src/domain/import/`, `src/server/importers/`, `/portfolios/[id]/import`): a parser
+  turns a broker's file into broker-neutral `ImportedOperation`s (`types.ts`); another broker
+  is another parser. The flow is stateless: the client sends the file once for a preview
+  (`planImport`, read-only) and again to commit (`runImport`, one database transaction).
+  Imported rows carry `source` and the broker's `externalId`, unique per account, which is
+  what makes a second import harmless. Never guess: a row that is not understood goes to
+  `skipped` with a reason. `.xlsx` files are read with `readWorkbook` (cell values only).
+- **Real account files never enter the repository.** They live in `/private` (ignored by git
+  and Docker). Tests build made-up reports with `src/test/xtb-report.ts`; do not copy rows,
+  account numbers or amounts from a real file into tests, docs, commits or pull requests.
 - Charts follow one rule set: one accent series (`--chart-value`), context in gray
   (`--chart-context`), hairline grid, a legend, a tooltip listing every series, and a table
   view of the same data. A chart with a single series (`MonthBars`) is named by its caption

@@ -42,11 +42,12 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
     notFound();
   }
 
-  const [valuation, transactions, t, tClasses] = await Promise.all([
+  const [valuation, transactions, t, tClasses, tImport] = await Promise.all([
     getPortfolioValuation(db, user, id),
     listTransactions(db, user, id),
     getTranslations("portfolio"),
     getTranslations("assetClasses"),
+    getTranslations("import"),
   ]);
 
   if (!valuation) {
@@ -275,12 +276,20 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
               <h2 id="transactions-title" className="text-xl font-semibold">
                 {t("transactions.title")}
               </h2>
-              <Link
-                href={`/portfolios/${portfolio.id}/transactions/new`}
-                className={buttonVariants({ className: "h-10 px-4" })}
-              >
-                {t("transactions.add")}
-              </Link>
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  href={`/portfolios/${portfolio.id}/import`}
+                  className="text-sm underline underline-offset-4"
+                >
+                  {tImport("link")}
+                </Link>
+                <Link
+                  href={`/portfolios/${portfolio.id}/transactions/new`}
+                  className={buttonVariants({ className: "h-10 px-4" })}
+                >
+                  {t("transactions.add")}
+                </Link>
+              </div>
             </div>
             {transactions && transactions.length > 0 ? (
               <TransactionsTable transactions={transactions} />

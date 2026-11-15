@@ -6,7 +6,7 @@ A free, open-source investment portfolio tracker for the Polish market that you 
 
 [Wersja polska](README.md)
 
-> **Work in progress.** What works today: user accounts, portfolios, accounts (standard, IKE, IKZE, OKI), transactions entered by hand with positions computed FIFO, downloaded quotes and exchange rates, and valuation in złoty: portfolio value, results split into price and currency effects, returns (TWR and XIRR), comparison with a benchmark, portfolio structure and a value chart, retail treasury bonds valued from their issue terms, dividend and interest history, figures for the PIT-38 tax return, and data export. Importing broker files comes next.
+> **Work in progress.** What works today: user accounts, portfolios, accounts (standard, IKE, IKZE, OKI), transactions entered by hand with positions computed FIFO, downloaded quotes and exchange rates, and valuation in złoty: portfolio value, results split into price and currency effects, returns (TWR and XIRR), comparison with a benchmark, portfolio structure and a value chart, retail treasury bonds valued from their issue terms, dividend and interest history, figures for the PIT-38 tax return, data export, and import of account history from XTB.
 
 The user interface is in Polish. Every text lives in one translation file (`src/i18n/messages/pl.json`), so another language can be added without touching the code.
 
@@ -65,6 +65,19 @@ Every instance downloads data on its own, for its own users. Only instruments th
 Quotes refresh every day at 18:30 and 23:15 Polish time, and on demand (the "Odśwież notowania" button). `MARKET_DATA=off` switches off all connections to the internet.
 
 `pnpm exec tsx scripts/check-market-data.mts` checks the live sources.
+
+## Import from XTB
+
+The portfolio page has a link "Importuj z XTB". It reads the account history report downloaded from xStation (an `.xlsx` file, one per account: PLN, EUR, USD, IKE):
+
+- it first shows a preview: how many operations would be added, which instruments would join the catalogue, which rows were left out and why; nothing is saved until you confirm,
+- it understands purchases and sales (fractional ones too), dividends with withholding tax, interest on idle cash, deposits, withdrawals and transfers to an IKE account,
+- importing the same report again, or a longer one, creates no duplicates,
+- the files of the currency accounts can go into one ourFund account, because cash is tracked per currency.
+
+Limits: instruments listed on GPW, in the US, on Xetra and on Euronext are supported; operations the importer does not know (currency conversions, for example) are not guessed but shown as left out. Shares received without any cash moving (an allotment, a spin-off) are added as a purchase at price zero if they are still on the account. The cost of a purchase is quantity times the price in the report, so the cash balance may differ from XTB's by fractions of a grosz.
+
+The file is read on your server; it is not sent anywhere and not kept.
 
 ## Taxes
 

@@ -36,6 +36,7 @@ function fakeProviders(overrides: Partial<MarketDataProviders> = {}) {
   return {
     quotes: vi.fn(overrides.quotes ?? (async () => closes())),
     rates: vi.fn(overrides.rates ?? (async () => rates())),
+    pauseMs: overrides.pauseMs ?? 0,
   };
 }
 

@@ -748,5 +748,65 @@
       "splitRatio": "Stosunek splitu",
       "note": "Notatka"
     }
+  },
+  "import": {
+    "title": "Import z XTB",
+    "intro": "Wczytaj historię rachunku z pliku wygenerowanego w XTB. Zanim cokolwiek zostanie zapisane, zobaczysz, jakie operacje zostaną dodane.",
+    "howTo": "Plik pobierzesz w xStation: historia rachunku, eksport do pliku .xlsx za cały okres. XTB tworzy osobny plik dla każdego rachunku (PLN, EUR, USD, IKE).",
+    "accountsNote": "Pliki rachunków walutowych możesz wczytać do tego samego rachunku w ourFund: gotówka jest liczona osobno w każdej walucie. Plik IKE wczytaj do rachunku typu IKE. Ponowny import tego samego albo dłuższego pliku nie tworzy duplikatów.",
+    "account": "Rachunek",
+    "accountHint": "Rachunek w ourFund, do którego trafią operacje z pliku.",
+    "file": "Plik z XTB (.xlsx)",
+    "fileHint": "Plik zostaje na Twoim serwerze i nie jest nigdzie wysyłany.",
+    "currency": "Waluta rachunku w XTB",
+    "currencyFromFile": "Odczytaj z pliku",
+    "currencyHint": "Wybierz ją tylko wtedy, gdy pliku nie da się rozpoznać.",
+    "check": "Sprawdź plik",
+    "done": "{imported, plural, one {Dodano # operację} few {Dodano # operacje} many {Dodano # operacji} other {Dodano # operacji}}. {duplicates, plural, =0 {} other {Pominięto już zaimportowane: #. }}{instruments, plural, =0 {} other {Nowe instrumenty w katalogu: #.}}",
+    "backToPortfolio": "Wróć do portfela",
+    "link": "Importuj z XTB",
+    "errors": {
+      "unknown": "Coś poszło nie tak. Spróbuj ponownie.",
+      "fileRequired": "Wybierz plik do wczytania.",
+      "tooLarge": "Plik jest za duży. Raport z XTB ma zwykle kilkadziesiąt kilobajtów.",
+      "notWorkbook": "To nie jest plik .xlsx. Wybierz raport pobrany z XTB.",
+      "notReport": "W pliku nie ma arkusza „Cash Operations”. Wybierz raport historii rachunku pobrany z XTB.",
+      "noCurrency": "Nie udało się ustalić waluty rachunku z pliku. Wybierz ją z listy i sprawdź plik ponownie.",
+      "accountNotFound": "Nie ma takiego rachunku w tym portfelu.",
+      "nothingToImport": "W pliku nie ma nowych operacji: wszystkie zostały już zaimportowane.",
+      "insufficientQuantity": "Nie można zaimportować pliku: sprzedaż {symbol} z dnia {date} przekracza stan rachunku."
+    },
+    "preview": {
+      "title": "Co zostanie dodane",
+      "summary": "Plik rachunku {account} ({currency}). {count, plural, =0 {Brak nowych operacji} one {# nowa operacja} few {# nowe operacje} many {# nowych operacji} other {# nowych operacji}}{duplicates, plural, =0 {} other {, już zaimportowanych: #}}.",
+      "problem": "Sprzedaż {symbol} z dnia {date} przekracza stan rachunku, więc pliku nie można zaimportować. Zwykle oznacza to, że raport nie obejmuje całej historii albo akcje trafiły na rachunek bez operacji gotówkowej. Dodaj brakujące kupno ręcznie i sprawdź plik ponownie.",
+      "newInstruments": "Nowe instrumenty w katalogu",
+      "mismatches": "Stan w pliku różni się od stanu wynikającego z operacji",
+      "mismatch": "{symbol}: w pliku {inFile}, z operacji {fromOperations}",
+      "mismatchesHint": "Zwykle raport nie obejmuje całej historii rachunku albo część akcji pochodzi z operacji bez przepływu gotówki. Po imporcie uzupełnij różnicę ręcznie.",
+      "conflicts": "Pominięte instrumenty",
+      "conflictsHint": "Katalog zna te symbole w innej walucie albo jako indeks. Operacje na nich nie zostaną zaimportowane.",
+      "skipped": "Pominięte wiersze ({count})",
+      "skippedHint": "Tych operacji import nie rozumie. Jeżeli zmieniły stan rachunku, dodaj je ręcznie.",
+      "skippedCaption": "Wiersze pliku pominięte przy imporcie",
+      "row": "Wiersz",
+      "operation": "Operacja w pliku",
+      "reason": "Powód",
+      "amount": "Kwota",
+      "reasons": {
+        "unknownType": "nieznany rodzaj operacji",
+        "unreadable": "nie udało się odczytać",
+        "unknownMarket": "nieobsługiwany rynek lub rodzaj instrumentu"
+      },
+      "operations": "Pokaż operacje do dodania ({count})",
+      "operationsCaption": "Operacje, które zostaną dodane",
+      "date": "Data",
+      "type": "Typ",
+      "instrument": "Instrument",
+      "quantity": "Liczba",
+      "price": "Cena",
+      "cash": "Wpływ na gotówkę",
+      "confirm": "{count, plural, one {Importuj # operację} few {Importuj # operacje} many {Importuj # operacji} other {Importuj # operacji}}"
+    }
   }
 }

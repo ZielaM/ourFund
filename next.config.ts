@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Broker reports are uploaded through a Server Action; the limit in the code is 4 MB.
+    serverActions: { bodySizeLimit: "5mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {
