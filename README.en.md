@@ -38,7 +38,7 @@ docker compose pull app
 docker compose up -d --no-build
 ```
 
-The variable `OURFUND_VERSION` picks a version (for example `0.1.0`); the newest one is pulled by default. On other architectures, such as a Raspberry Pi, build the image locally with `docker compose up -d --build`.
+The variable `OURFUND_VERSION` picks a version (for example `0.2.0`); the newest one is pulled by default. On other architectures, such as a Raspberry Pi, build the image locally with `docker compose up -d --build`.
 
 To update, run `docker compose pull app` and `docker compose up -d --no-build` again. Migrations run on their own; make a backup first.
 
@@ -48,7 +48,7 @@ Optional settings (a `.env` file next to `docker-compose.yml`):
 | -------------------- | --------- | -------------------------------------------------------------------------------------- |
 | `APP_PORT`           | `3000`    | Port the application is published on                                                   |
 | `ALLOW_REGISTRATION` | `false`   | `true` lets anyone who can reach the application create an account                     |
-| `OURFUND_VERSION`    | `latest`  | Version of the published image, for example `0.1.0`                                    |
+| `OURFUND_VERSION`    | `latest`  | Version of the published image, for example `0.2.0`                                    |
 | `MARKET_DATA`        | `live`    | `off` never downloads quotes or exchange rates; prices are then entered by hand        |
 | `POSTGRES_PASSWORD`  | `ourfund` | Database password (letters and digits only); the database is not published to the host |
 
