@@ -262,3 +262,10 @@ describe("getMarketDataProviders", () => {
     expect(getMarketDataProviders("off")).toBeNull();
   });
 });
+
+describe("pauses between requests", () => {
+  it("spaces out requests to the real services and never waits on made-up data", () => {
+    expect(createLiveProviders(vi.fn()).pauseMs).toBeGreaterThan(0);
+    expect(createFixtureProviders().pauseMs).toBe(0);
+  });
+});

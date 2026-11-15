@@ -16,7 +16,15 @@ export type MarketDataProviders = {
   quotes(symbol: string, currency: string, from: IsoDate, to: IsoDate): Promise<QuoteResult>;
   /** PLN per one unit of `currency` for each day NBP published a rate. */
   rates(currency: string, from: IsoDate, to: IsoDate): Promise<RatesResult>;
+  /**
+   * Pause between two requests, in milliseconds, to stay a polite client of the services
+   * behind the provider. Zero when nothing is requested over the network.
+   */
+  pauseMs: number;
 };
+
+/** Yahoo Finance and NBP are free services; requests are spaced out. */
+const LIVE_PAUSE_MS = 300;
 
 type Fetch = typeof fetch;
 
@@ -46,6 +54,7 @@ const toUnixSeconds = (date: IsoDate) => Date.parse(`${date}T00:00:00.000Z`) / 1
 /** Prices from Yahoo Finance's chart endpoint, exchange rates from the NBP API. */
 export function createLiveProviders(fetchFn: Fetch = fetch): MarketDataProviders {
   return {
+    pauseMs: LIVE_PAUSE_MS,
     async quotes(symbol, currency, from, to) {
       // One day of margin on each side: bars are stamped in the exchange's time zone.
       const url =
@@ -125,6 +134,7 @@ function weekdays(from: IsoDate, to: IsoDate): IsoDate[] {
 /** Made-up, constant data for end-to-end tests: nothing leaves the machine. */
 export function createFixtureProviders(): MarketDataProviders {
   return {
+    pauseMs: 0,
     async quotes(symbol, _currency, from, to) {
       if (symbol.startsWith("MISSING")) {
         return { ok: false, reason: "notFound" };

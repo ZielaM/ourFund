@@ -6,7 +6,7 @@ Otwarty, darmowy tracker portfela inwestycyjnego dla rynku polskiego, uruchamian
 
 [English version](README.en.md)
 
-> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji, historia dywidend i odsetek, zestawienie do PIT-38 oraz eksport danych. Import z brokerów powstaje w kolejnym etapie.
+> **Projekt w budowie.** Działają konta użytkowników, portfele, rachunki (zwykłe, IKE, IKZE, OKI), ręcznie wpisywane transakcje z wyliczaniem pozycji metodą FIFO, pobieranie notowań i kursów walut oraz wycena w złotych: wartość portfela, wynik z rozbiciem na zmianę ceny i kursu waluty, stopy zwrotu (TWR i XIRR), porównanie z benchmarkiem, struktura portfela i wykres wartości, detaliczne obligacje skarbowe wyceniane z warunków emisji, historia dywidend i odsetek, zestawienie do PIT-38 eksport danych oraz import historii rachunku z XTB.
 
 ## Założenia
 
@@ -63,6 +63,19 @@ Każda instancja pobiera dane samodzielnie, na własny użytek jej użytkownikó
 Notowania odświeżają się codziennie o 18:30 i 23:15 czasu polskiego oraz na żądanie (przycisk „Odśwież notowania”). Ustawienie `MARKET_DATA=off` całkowicie wyłącza połączenia z internetem.
 
 Poprawność działania źródeł na żywo sprawdza polecenie `pnpm exec tsx scripts/check-market-data.mts`.
+
+## Import z XTB
+
+Na stronie portfela jest odnośnik „Importuj z XTB”. Wczytuje on raport historii rachunku pobrany z xStation (plik `.xlsx`, osobny dla każdego rachunku: PLN, EUR, USD, IKE):
+
+- najpierw pokazuje podgląd: ile operacji zostanie dodanych, jakie instrumenty trafią do katalogu, które wiersze pominięto i dlaczego; zapis następuje dopiero po zatwierdzeniu,
+- rozpoznaje kupna i sprzedaże (także ułamkowe), dywidendy z podatkiem u źródła, odsetki od wolnych środków, wpłaty, wypłaty i przelewy na IKE,
+- ponowny import tego samego albo dłuższego raportu nie tworzy duplikatów,
+- pliki rachunków walutowych można wczytać do jednego rachunku w ourFund, bo gotówka jest liczona osobno w każdej walucie.
+
+Ograniczenia: obsługiwane są instrumenty z GPW, USA, Xetry i Euronextu; operacji, których import nie zna (np. przewalutowań), nie zgaduje, tylko pokazuje je jako pominięte. Akcje otrzymane bez przepływu gotówki (przydział, podział spółki) są dodawane jako kupno po cenie zero, jeśli nadal są na rachunku. Koszt zakupu to liczba razy cena z raportu, więc saldo gotówki może różnić się od salda w XTB o ułamki grosza.
+
+Plik jest czytany na Twoim serwerze i nie jest nigdzie wysyłany ani przechowywany.
 
 ## Podatki
 

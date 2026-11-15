@@ -34,7 +34,7 @@ export type RefreshReport = z.infer<typeof reportSchema>;
 
 type RefreshOptions = {
   now?: Date;
-  /** Pause between requests to the same provider, to stay a polite client. */
+  /** Overrides the provider's own pause between requests. */
   pauseMs?: number;
 };
 
@@ -68,7 +68,7 @@ export async function refreshMarketData(
   options: RefreshOptions = {},
 ): Promise<RefreshReport> {
   const today = todayInWarsaw(options.now ?? new Date());
-  const pauseMs = options.pauseMs ?? 300;
+  const pauseMs = options.pauseMs ?? providers.pauseMs;
 
   const [instruments, firstTransactions, priceRanges, benchmarked] = await Promise.all([
     db.instrument.findMany({

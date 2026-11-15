@@ -243,11 +243,11 @@ function isConsistent(rows: readonly StoredTransaction[]): boolean {
 }
 
 /** Serializes changes to one account, so two requests cannot both pass the consistency check. */
-async function lockAccount(tx: Prisma.TransactionClient, accountId: string): Promise<void> {
+export async function lockAccount(tx: Prisma.TransactionClient, accountId: string): Promise<void> {
   await tx.$executeRaw`SELECT 1 FROM "accounts" WHERE "id" = ${accountId}::uuid FOR UPDATE`;
 }
 
-function loadAccountHistory(tx: Prisma.TransactionClient, accountId: string) {
+export function loadAccountHistory(tx: Prisma.TransactionClient, accountId: string) {
   return tx.transaction.findMany({ where: { accountId }, orderBy: [...ledgerOrder] });
 }
 
