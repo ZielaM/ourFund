@@ -13,6 +13,7 @@ import {
 } from "@/lib/form-state";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
+import { dismissEvent } from "@/server/events/event-suggestions";
 import {
   createAccount,
   createPortfolio,
@@ -292,4 +293,25 @@ export async function deleteTransactionAction(
   }
 
   redirect(`/portfolios/${portfolioId}`);
+}
+
+/** Hides a suggested dividend or split for one account. */
+export async function dismissEventAction(
+  portfolioId: string,
+  accountId: string,
+  eventId: string,
+  _state: FormState,
+  _formData: FormData,
+): Promise<FormState> {
+  void _state;
+  void _formData;
+  const user = await requireUser();
+
+  const result = await dismissEvent(getDb(), user, accountId, eventId);
+  if (!result.ok) {
+    return formFailed("events.notFound");
+  }
+
+  revalidatePath(`/portfolios/${portfolioId}`, "layout");
+  return { status: "success", message: "events.dismissed" };
 }

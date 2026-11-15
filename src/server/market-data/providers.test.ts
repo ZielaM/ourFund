@@ -224,6 +224,66 @@ describe("live exchange rates (NBP)", () => {
   });
 });
 
+describe("live quotes: dividends and splits", () => {
+  const withEvents = (currency: string) => ({
+    chart: {
+      result: [
+        {
+          meta: { currency, gmtoffset: 3600 },
+          timestamp: [at("2026-11-09T08:00:00Z"), at("2026-11-10T08:00:00Z")],
+          indicators: { quote: [{ close: [100, 51] }] },
+          events: {
+            dividends: {
+              a: { date: at("2026-11-09T08:00:00Z"), amount: 1.25 },
+              b: { date: at("2026-11-12T08:00:00Z"), amount: 3 },
+            },
+            splits: { a: { date: at("2026-11-10T08:00:00Z"), numerator: 2, denominator: 1 } },
+          },
+        },
+      ],
+      error: null,
+    },
+  });
+
+  it("asks for them and returns those of the period, as traded and as paid", async () => {
+    const { fetchFn, urls } = fakeFetch([{ status: 200, body: withEvents("PLN") }]);
+
+    const result = await createLiveProviders(fetchFn).quotes(
+      "CDR.WA",
+      "PLN",
+      "2026-11-09",
+      "2026-11-10",
+    );
+
+    expect(urls[0]).toContain("events=div%2Csplits");
+    expect(result.ok && result.splits.map((s) => [s.date, s.ratio.toFixed()])).toEqual([
+      ["2026-11-10", "2"],
+    ]);
+    // Before the 2:1 split the share cost 200 and paid 2.50; the later dividend is out of range.
+    expect(result.ok && result.closes.map((c) => [c.date, c.close.toFixed()])).toEqual([
+      ["2026-11-09", "200"],
+      ["2026-11-10", "51"],
+    ]);
+    expect(result.ok && result.dividends.map((d) => [d.date, d.amount.toFixed()])).toEqual([
+      ["2026-11-09", "2.5"],
+    ]);
+  });
+
+  it("converts dividends quoted in pence to pounds, like the closes", async () => {
+    const { fetchFn } = fakeFetch([{ status: 200, body: withEvents("GBp") }]);
+
+    const result = await createLiveProviders(fetchFn).quotes(
+      "VOD.L",
+      "GBP",
+      "2026-11-09",
+      "2026-11-10",
+    );
+
+    expect(result.ok && result.dividends[0].amount.toFixed()).toBe("0.025");
+    expect(result.ok && result.closes[0].close.toFixed()).toBe("2");
+  });
+});
+
 describe("fixture providers", () => {
   const providers = createFixtureProviders();
 
@@ -244,6 +304,21 @@ describe("fixture providers", () => {
     await expect(
       providers.quotes("MISSING.WA", "PLN", "2026-11-09", "2026-11-09"),
     ).resolves.toEqual({ ok: false, reason: "notFound" });
+  });
+
+  it("report a split and a dividend for one made-up company only", async () => {
+    const events = await providers.quotes("EVENTS.WA", "PLN", "2026-01-01", "2026-12-31");
+    const plain = await providers.quotes("CDR.WA", "PLN", "2026-01-01", "2026-12-31");
+    const early = await providers.quotes("EVENTS.WA", "PLN", "2026-01-01", "2026-02-27");
+
+    expect(events.ok && events.splits.map((s) => [s.date, s.ratio.toFixed()])).toEqual([
+      ["2026-03-02", "2"],
+    ]);
+    expect(events.ok && events.dividends.map((d) => [d.date, d.amount.toFixed()])).toEqual([
+      ["2026-06-15", "1.5"],
+    ]);
+    expect(plain.ok && [plain.splits, plain.dividends]).toEqual([[], []]);
+    expect(early.ok && [early.splits, early.dividends]).toEqual([[], []]);
   });
 
   it("serve constant exchange rates", async () => {

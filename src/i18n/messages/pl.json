@@ -173,6 +173,9 @@
       "created": "Seria {series} została dodana.",
       "rateSaved": "Oprocentowanie zostało zapisane.",
       "rateDeleted": "Oprocentowanie zostało usunięte."
+    },
+    "events": {
+      "dismissed": "Zdarzenie zostało pominięte."
     }
   },
   "errors": {
@@ -267,6 +270,9 @@
     },
     "period": {
       "invalid": "Wybierz okres z listy."
+    },
+    "events": {
+      "notFound": "Nie znaleziono tego zdarzenia."
     }
   },
   "notFound": {
@@ -820,5 +826,33 @@
       "cash": "Wpływ na gotówkę",
       "confirm": "{count, plural, one {Importuj # operację} few {Importuj # operacje} many {Importuj # operacji} other {Importuj # operacji}}"
     }
+  },
+  "events": {
+    "title": "Dywidendy i splity do uzupełnienia",
+    "intro": "Razem z notowaniami pobierane są informacje o dywidendach i splitach. Tu są te, których nie ma jeszcze na rachunkach tego portfela. Nic nie jest dodawane samo: każdą pozycję zapisujesz albo pomijasz.",
+    "empty": "Nic do uzupełnienia. Wszystkie znane dywidendy i splity są zapisane.",
+    "splitsFirst": "Zacznij od splitów. Liczba sztuk przy późniejszych dywidendach zakłada, że wcześniejszy split jest już zapisany.",
+    "disclaimer": "Kwoty są wyliczone z liczby sztuk posiadanych dzień przed odcięciem prawa do dywidendy. Dzień wypłaty i podatek sprawdź w potwierdzeniu od brokera.",
+    "table": {
+      "caption": "Dywidendy i splity, których nie ma na rachunkach",
+      "date": "Data",
+      "account": "Rachunek",
+      "instrument": "Instrument",
+      "event": "Zdarzenie",
+      "actions": "Co zrobić"
+    },
+    "split": "Split {ratio}",
+    "splitDetail": "{before} szt. zamienia się w {after} szt.",
+    "dividend": "Dywidenda {amount} brutto",
+    "dividendDetail": "{quantity} szt. po {perUnit}",
+    "record": "Zapisz",
+    "dismiss": "Pomiń",
+    "recordLabel": "Zapisz: {label}",
+    "dismissLabel": "Pomiń: {label}",
+    "describe": {
+      "SPLIT": "split {symbol} z {date} na rachunku {account}",
+      "DIVIDEND": "dywidenda {symbol} z {date} na rachunku {account}"
+    },
+    "notice": "{count, plural, one {# dywidenda lub split do uzupełnienia} few {# dywidendy lub splity do uzupełnienia} other {# dywidend lub splitów do uzupełnienia}}"
   }
 }

@@ -49,6 +49,14 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   provider, run `pnpm exec tsx scripts/check-market-data.mts` against the real services.
   stooq.pl is deliberately not used: it puts a browser check in front of automated clients.
 - Prices entered by hand (`source = MANUAL`) are never overwritten by a refresh.
+- Stored prices are **as traded**. Yahoo divides every close and dividend before a split by
+  its ratio; `parseYahooChart` multiplies them back (`undoSplitAdjustment`), which is only
+  right for a request that ends today. The refresh also stores dividends and splits
+  (`InstrumentEvent`) and fetches the whole history once per instrument (`eventsFrom`).
+- Dividends and splits are **suggested, never applied** (`src/domain/events/`,
+  `/portfolios/[id]/events`): `suggestEvents` compares the stored events with one account's
+  transactions, and the owner records each from the prefilled new-transaction form (query
+  parameters) or dismisses it (`DismissedEvent`). In the ledger a split comes first on its day.
 - A benchmark is any instrument of the catalogue (`Portfolio.benchmarkInstrumentId`); it is
   refreshed even when nobody holds it. Instruments of type `INDEX` cannot be traded. Yahoo
   has no history for GPW indices (WIG, WIG20), only for ETFs tracking them and for foreign

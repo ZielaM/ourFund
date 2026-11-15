@@ -1,18 +1,31 @@
 import { REPOSITORY_URL } from "@/config/app";
 import { addDays, parseNbpRates, splitDateRange, type DailyRate } from "@/domain/market-data/nbp";
-import { closesInCurrency, parseYahooChart, type DailyClose } from "@/domain/market-data/yahoo";
+import {
+  closesInCurrency,
+  currencyScale,
+  parseYahooChart,
+  type DailyClose,
+  type DividendEvent,
+  type SplitEvent,
+} from "@/domain/market-data/yahoo";
 import { Decimal } from "@/domain/decimal";
 import type { IsoDate } from "@/domain/portfolio/dates";
 
 export type QuoteFailure = "notFound" | "currencyMismatch" | "unavailable";
 
-export type QuoteResult = { ok: true; closes: DailyClose[] } | { ok: false; reason: QuoteFailure };
+export type QuoteResult =
+  | { ok: true; closes: DailyClose[]; dividends: DividendEvent[]; splits: SplitEvent[] }
+  | { ok: false; reason: QuoteFailure };
 
 export type RatesResult = { ok: true; rates: DailyRate[] } | { ok: false; reason: "unavailable" };
 
 /** Where daily prices and exchange rates come from. */
 export type MarketDataProviders = {
-  /** Daily closes of `symbol` between the two dates (inclusive), in `currency`. */
+  /**
+   * Daily closes of `symbol` between the two dates (inclusive), in `currency`, with the
+   * dividends and splits of that period. Closes and dividends are as traded and as paid:
+   * the provider's split adjustment is undone, which is only right when `to` is today.
+   */
   quotes(symbol: string, currency: string, from: IsoDate, to: IsoDate): Promise<QuoteResult>;
   /** PLN per one unit of `currency` for each day NBP published a rate. */
   rates(currency: string, from: IsoDate, to: IsoDate): Promise<RatesResult>;
@@ -60,7 +73,7 @@ export function createLiveProviders(fetchFn: Fetch = fetch): MarketDataProviders
       const url =
         `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
         `?period1=${toUnixSeconds(addDays(from, -1))}&period2=${toUnixSeconds(addDays(to, 2))}` +
-        `&interval=1d`;
+        `&interval=1d&events=div%2Csplits`;
 
       try {
         const { status, json } = await getJson(fetchFn, url);
@@ -74,13 +87,19 @@ export function createLiveProviders(fetchFn: Fetch = fetch): MarketDataProviders
         }
 
         const closes = closesInCurrency(chart.closes, chart.currency, currency);
-        if (!closes) {
+        const scale = currencyScale(chart.currency, currency);
+        if (!closes || !scale) {
           return { ok: false, reason: "currencyMismatch" };
         }
 
+        const inRange = (item: { date: IsoDate }) => item.date >= from && item.date <= to;
         return {
           ok: true,
-          closes: closes.filter((close) => close.date >= from && close.date <= to),
+          closes: closes.filter(inRange),
+          dividends: chart.dividends
+            .filter(inRange)
+            .map((dividend) => ({ ...dividend, amount: dividend.amount.times(scale) })),
+          splits: chart.splits.filter(inRange),
         };
       } catch {
         return { ok: false, reason: "unavailable" };
@@ -118,6 +137,17 @@ export function createLiveProviders(fetchFn: Fetch = fetch): MarketDataProviders
 }
 
 const FIXTURE_PRICES: Record<string, string> = { "CDR.WA": "250", AAPL: "200" };
+/** One made-up company with a split and a dividend, for the tests of those suggestions. */
+const FIXTURE_EVENTS: Record<
+  string,
+  { dividends: { date: IsoDate; amount: string }[]; splits: { date: IsoDate; ratio: string }[] }
+> = {
+  "EVENTS.WA": {
+    splits: [{ date: "2026-03-02", ratio: "2" }],
+    dividends: [{ date: "2026-06-15", amount: "1.5" }],
+  },
+};
+
 const FIXTURE_RATES: Record<string, string> = { USD: "4", EUR: "4.3" };
 
 function weekdays(from: IsoDate, to: IsoDate): IsoDate[] {
@@ -141,7 +171,18 @@ export function createFixtureProviders(): MarketDataProviders {
       }
 
       const close = new Decimal(FIXTURE_PRICES[symbol] ?? "100");
-      return { ok: true, closes: weekdays(from, to).map((date) => ({ date, close })) };
+      const events = FIXTURE_EVENTS[symbol] ?? { dividends: [], splits: [] };
+      const inRange = (item: { date: IsoDate }) => item.date >= from && item.date <= to;
+      return {
+        ok: true,
+        closes: weekdays(from, to).map((date) => ({ date, close })),
+        dividends: events.dividends
+          .filter(inRange)
+          .map(({ date, amount }) => ({ date, amount: new Decimal(amount) })),
+        splits: events.splits
+          .filter(inRange)
+          .map(({ date, ratio }) => ({ date, ratio: new Decimal(ratio) })),
+      };
     },
 
     async rates(currency, from, to) {

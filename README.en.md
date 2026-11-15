@@ -62,6 +62,8 @@ Every instance downloads data on its own, for its own users. Only instruments th
 - **Prices entered by hand** always win over downloaded ones. An instrument can also be switched to manual prices entirely.
 - **Retail treasury bonds** (OTS, ROR, DOR, TOS, COI, EDO, ROS, ROD) have no quotes and nothing is downloaded for them. Their value is computed from the issue terms, separately for every purchase: interest accrued since the purchase day, yearly capitalisation or payout. When adding a series you give its symbol (for example `EDO1135`), the rate of the first period and the margin from the issue letter. For floating-rate bonds the rate of each later period is entered by hand once it is announced, because the Ministry of Finance does not publish this data in a form fit for automatic download. Until the rate of the current period is entered, the valuation uses the last known one and is marked as an estimate.
 
+**Dividends and splits** are fetched together with the quotes. The app never adds anything by itself: the portfolio page links to a list of events missing from its accounts, and each one is either recorded from a prefilled form or dismissed. A dividend amount follows from the units held the day before the ex-dividend day; the payment day and the tax have to be checked against the broker's confirmation. Yahoo reports historical prices adjusted for splits, so the app converts them back to the prices that were actually traded. Renamed companies, rights issues and mergers are not handled.
+
 Quotes refresh every day at 18:30 and 23:15 Polish time, and on demand (the "Odśwież notowania" button). `MARKET_DATA=off` switches off all connections to the internet.
 
 `pnpm exec tsx scripts/check-market-data.mts` checks the live sources.

@@ -23,6 +23,7 @@ import type { InstrumentType } from "@/domain/portfolio/naming";
 import { formatDate, formatMoney, formatSignedPercent } from "@/lib/format";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
+import { getEventSuggestions } from "@/server/events/event-suggestions";
 import { getPortfolio } from "@/server/portfolio/portfolios";
 import { listTransactions } from "@/server/portfolio/transactions";
 import { getPortfolioValuation } from "@/server/valuation/portfolio-valuation";
@@ -42,12 +43,14 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
     notFound();
   }
 
-  const [valuation, transactions, t, tClasses, tImport] = await Promise.all([
+  const [valuation, transactions, suggestions, t, tClasses, tImport, tEvents] = await Promise.all([
     getPortfolioValuation(db, user, id),
     listTransactions(db, user, id),
+    getEventSuggestions(db, user, id),
     getTranslations("portfolio"),
     getTranslations("assetClasses"),
     getTranslations("import"),
+    getTranslations("events"),
   ]);
 
   if (!valuation) {
@@ -90,6 +93,17 @@ export default async function PortfolioPage({ params }: PageProps<"/portfolios/[
           </Link>
         </div>
       </div>
+
+      {suggestions && suggestions.length > 0 ? (
+        <p className="mt-6">
+          <Link
+            href={`/portfolios/${portfolio.id}/events`}
+            className="font-medium underline underline-offset-4"
+          >
+            {tEvents("notice", { count: suggestions.length })}
+          </Link>
+        </p>
+      ) : null}
 
       {portfolio.accounts.length === 0 ? (
         <section className="mt-10 flex max-w-prose flex-col items-start gap-3">
