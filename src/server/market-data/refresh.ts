@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { saleMonth } from "@/domain/bonds/indexation";
+import { BOND_RULES, type BondKind } from "@/domain/bonds/kinds";
 import { addDays } from "@/domain/market-data/nbp";
 import { effectiveQuoteSymbol } from "@/domain/market-data/quote-symbol";
 import { isoDateToUtc, todayInWarsaw, utcToIsoDate, type IsoDate } from "@/domain/portfolio/dates";
@@ -28,6 +30,10 @@ const reportSchema = z.object({
     updated: z.number(),
     failed: z.array(z.string()),
   }),
+  /** Sources of bond rates that could not be read; absent in reports of older versions. */
+  indexes: z
+    .object({ failed: z.array(z.enum(["inflation", "referenceRate"])) })
+    .default({ failed: [] }),
 });
 
 export type RefreshReport = z.infer<typeof reportSchema>;
@@ -122,6 +128,7 @@ export async function refreshMarketData(
     finishedAt: "",
     instruments: { updated: 0, failed: [] },
     currencies: { updated: 0, failed: [] },
+    indexes: { failed: [] },
   };
 
   for (const [index, instrument] of instruments.entries()) {
@@ -243,6 +250,7 @@ export async function refreshMarketData(
   }
 
   await refreshRates(db, providers, today, pauseMs, report);
+  await refreshBondIndexes(db, providers, today, pauseMs, report);
 
   report.finishedAt = new Date().toISOString();
   await db.appSetting.upsert({
@@ -314,6 +322,77 @@ async function refreshRates(
       skipDuplicates: true,
     });
     report.currencies.updated += 1;
+  }
+}
+
+/**
+ * Fetches what floating-rate treasury bonds follow: GUS's inflation readings and the NBP
+ * reference rate. Only what the series in the catalogue need, and only missing months.
+ */
+async function refreshBondIndexes(
+  db: PrismaClient,
+  providers: MarketDataProviders,
+  today: IsoDate,
+  pauseMs: number,
+  report: RefreshReport,
+): Promise<void> {
+  const series = await db.bondSeries.findMany({
+    select: { kind: true, instrument: { select: { symbol: true } } },
+  });
+  const follows = (kind: BondKind) => BOND_RULES[kind].follows;
+  const thisYear = Number(today.slice(0, 4));
+
+  if (series.some(({ kind }) => follows(kind) === "nbpReferenceRate")) {
+    const result = await providers.referenceRates();
+    if (!result.ok) {
+      report.indexes.failed.push("referenceRate");
+    } else {
+      await db.$transaction(
+        result.changes.map((change) =>
+          db.referenceRate.upsert({
+            where: { validFrom: isoDateToUtc(change.validFrom) },
+            create: { validFrom: isoDateToUtc(change.validFrom), rate: change.rate.toFixed() },
+            update: { rate: change.rate.toFixed() },
+          }),
+        ),
+      );
+    }
+  }
+
+  // The first later period takes the reading from just before it, a year after the sale.
+  const saleYears = series
+    .filter(({ kind }) => follows(kind) === "inflation")
+    .flatMap(({ instrument }) => saleMonth(instrument.symbol)?.year ?? []);
+  if (saleYears.length === 0) {
+    return;
+  }
+
+  const stored = await db.inflationReading.groupBy({ by: ["year"], _count: true });
+  const complete = new Set(stored.filter((row) => row._count === 12).map((row) => row.year));
+  let failed = false;
+  for (let year = Math.min(...saleYears); year <= thisYear; year += 1) {
+    if (complete.has(year)) {
+      continue;
+    }
+
+    await sleep(pauseMs);
+    const result = await providers.inflation(year);
+    if (!result.ok) {
+      failed = true;
+      continue;
+    }
+    await db.$transaction(
+      result.readings.map((reading) =>
+        db.inflationReading.upsert({
+          where: { year_month: { year, month: reading.month } },
+          create: { year, month: reading.month, value: reading.value.toFixed() },
+          update: { value: reading.value.toFixed() },
+        }),
+      ),
+    );
+  }
+  if (failed) {
+    report.indexes.failed.push("inflation");
   }
 }
 

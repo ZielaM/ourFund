@@ -138,7 +138,10 @@ export default async function InstrumentsPage() {
                 : t("quotes.never")}
             </p>
             {lastRefresh &&
-            lastRefresh.instruments.failed.length + lastRefresh.currencies.failed.length > 0 ? (
+            lastRefresh.instruments.failed.length +
+              lastRefresh.currencies.failed.length +
+              lastRefresh.indexes.failed.length >
+              0 ? (
               <div className="flex flex-col gap-1 text-sm">
                 <h3 className="font-sans font-medium">{t("quotes.failedTitle")}</h3>
                 <ul className="list-disc pl-5 text-muted-foreground">
@@ -157,6 +160,9 @@ export default async function InstrumentsPage() {
                       })}
                     </li>
                   ) : null}
+                  {lastRefresh.indexes.failed.map((index) => (
+                    <li key={index}>{t(`quotes.failedIndexes.${index}`)}</li>
+                  ))}
                 </ul>
               </div>
             ) : null}

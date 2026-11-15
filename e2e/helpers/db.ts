@@ -8,7 +8,7 @@ export async function resetDatabase(): Promise<void> {
 
   try {
     await client.query(
-      'TRUNCATE TABLE "bond_rates", "bond_series", "prices", "fx_rates", "transactions", "instruments", "accounts", "portfolios", "users", "sessions", "login_attempts", "app_settings" RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE "inflation_readings", "reference_rates", "bond_rates", "bond_series", "prices", "fx_rates", "transactions", "instruments", "accounts", "portfolios", "users", "sessions", "login_attempts", "app_settings" RESTART IDENTITY CASCADE',
     );
   } finally {
     await client.end();

@@ -51,4 +51,28 @@ for (const currency of ["USD", "EUR", "JPY"]) {
   }
 }
 
+// What floating-rate treasury bonds follow.
+const inflation = await providers.inflation(Number(today.slice(0, 4)) - 1);
+if (inflation.ok) {
+  const last = inflation.readings.at(-1);
+  console.log(
+    `GUS inflation: ${inflation.readings.length} months of last year, last ${last?.month} ${last?.value}%`,
+  );
+  failed ||= inflation.readings.length !== 12;
+} else {
+  console.log(`GUS inflation: ${inflation.reason}`);
+  failed = true;
+}
+
+const referenceRates = await providers.referenceRates();
+if (referenceRates.ok) {
+  const last = referenceRates.changes.at(-1);
+  console.log(
+    `NBP reference rate: ${referenceRates.changes.length} changes, last ${last?.validFrom} ${last?.rate}%`,
+  );
+} else {
+  console.log(`NBP reference rate: ${referenceRates.reason}`);
+  failed = true;
+}
+
 process.exit(failed ? 1 : 0);

@@ -284,6 +284,90 @@ describe("live quotes: dividends and splits", () => {
   });
 });
 
+describe("live indexes for bond rates", () => {
+  it("reads a year of GUS inflation readings", async () => {
+    const { fetchFn, urls } = fakeFetch([
+      { status: 200, body: [{ "id-okres": 255, wartosc: 104.1 }] },
+    ]);
+
+    const result = await createLiveProviders(fetchFn).inflation(2026);
+
+    expect(urls[0]).toBe(
+      "https://api-sdp.stat.gov.pl/api/indicators/indicator-data-indicator?id-wskaznik=2728&id-rok=2026&lang=pl",
+    );
+    expect(result.ok && result.readings.map((r) => [r.month, r.value.toFixed()])).toEqual([
+      [9, "4.1"],
+    ]);
+  });
+
+  it("falls back to the indicator that covers the years before 2026", async () => {
+    const { fetchFn, urls } = fakeFetch([
+      { status: 404, body: { status: "404" } },
+      { status: 200, body: [{ "id-okres": 258, wartosc: 102.4 }] },
+    ]);
+
+    const result = await createLiveProviders(fetchFn).inflation(2025);
+
+    expect(urls.map((url) => new URL(url).searchParams.get("id-wskaznik"))).toEqual([
+      "2728",
+      "1832",
+    ]);
+    expect(result.ok && result.readings.map((r) => [r.month, r.value.toFixed()])).toEqual([
+      [12, "2.4"],
+    ]);
+  });
+
+  it("treats a year without published months as empty, other failures as unavailable", async () => {
+    const unavailable = { ok: false, reason: "unavailable" };
+    const empty = fakeFetch([
+      { status: 404, body: { status: "404" } },
+      { status: 404, body: { status: "404" } },
+    ]);
+    const broken = fakeFetch([{ status: 500, body: "oops" }]);
+    const odd = fakeFetch([{ status: 200, body: { unexpected: true } }]);
+    const offline = vi.fn(async () => {
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+
+    await expect(createLiveProviders(empty.fetchFn).inflation(2031)).resolves.toEqual({
+      ok: true,
+      readings: [],
+    });
+    await expect(createLiveProviders(broken.fetchFn).inflation(2026)).resolves.toEqual(unavailable);
+    await expect(createLiveProviders(odd.fetchFn).inflation(2026)).resolves.toEqual(unavailable);
+    await expect(createLiveProviders(offline).inflation(2026)).resolves.toEqual(unavailable);
+  });
+
+  it("reads the changes of the NBP reference rate", async () => {
+    const xml =
+      '<stopy_procentowe_archiwum><pozycje obowiazuje_od="2026-03-05">' +
+      '<pozycja id="ref" oprocentowanie="4,00" /></pozycje></stopy_procentowe_archiwum>';
+    const { fetchFn, urls } = fakeFetch([{ status: 200, body: xml }]);
+
+    const result = await createLiveProviders(fetchFn).referenceRates();
+
+    expect(urls[0]).toBe("https://static.nbp.pl/dane/stopy/stopy_procentowe_archiwum.xml");
+    expect(result.ok && result.changes.map((c) => [c.validFrom, c.rate.toFixed()])).toEqual([
+      ["2026-03-05", "4"],
+    ]);
+  });
+
+  it("reports the reference rate as unavailable when the archive cannot be read", async () => {
+    const unavailable = { ok: false, reason: "unavailable" };
+    const missing = fakeFetch([{ status: 404, body: "" }]);
+    const page = fakeFetch([{ status: 200, body: "<html></html>" }]);
+    const offline = vi.fn(async () => {
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+
+    await expect(createLiveProviders(missing.fetchFn).referenceRates()).resolves.toEqual(
+      unavailable,
+    );
+    await expect(createLiveProviders(page.fetchFn).referenceRates()).resolves.toEqual(unavailable);
+    await expect(createLiveProviders(offline).referenceRates()).resolves.toEqual(unavailable);
+  });
+});
+
 describe("fixture providers", () => {
   const providers = createFixtureProviders();
 
@@ -319,6 +403,11 @@ describe("fixture providers", () => {
     ]);
     expect(plain.ok && [plain.splits, plain.dividends]).toEqual([[], []]);
     expect(early.ok && [early.splits, early.dividends]).toEqual([[], []]);
+  });
+
+  it("know no index data, so bonds keep the rates the tests enter", async () => {
+    await expect(providers.inflation(2026)).resolves.toEqual({ ok: true, readings: [] });
+    await expect(providers.referenceRates()).resolves.toEqual({ ok: true, changes: [] });
   });
 
   it("serve constant exchange rates", async () => {

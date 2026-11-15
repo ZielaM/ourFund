@@ -228,3 +228,59 @@ describe("a portfolio holding treasury bonds", () => {
     expect(performance.xirr).toBeCloseTo(0.044, 4);
   });
 });
+
+describe("rates worked out from GUS and NBP data", () => {
+  const now = new Date("2026-11-15T12:00:00Z");
+
+  it("fill the later periods of an inflation-linked series; an entered rate wins", async () => {
+    // Sold in November 2024: period 2 follows September 2025, period 3 September 2026.
+    const id = await bond("EDO1134", "6.55", "2");
+    await db.inflationReading.createMany({
+      data: [
+        { year: 2025, month: 9, value: "2.9" },
+        { year: 2026, month: 9, value: "4.1" },
+      ],
+    });
+    await setBondRate(db, ania, id, 3, d("6.5"));
+
+    const detail = await getBond(db, id, now);
+    expect(detail?.rates.map((row) => [row.period, row.rate.toFixed(), row.source])).toEqual([
+      [2, "4.9", "COMPUTED"],
+      [3, "6.5", "MANUAL"],
+    ]);
+
+    const series = (await loadBondSeries(db, [id], now)).get(id);
+    expect(
+      [...(series?.laterRates ?? [])].map(([period, rate]) => [period, rate.toFixed()]),
+    ).toEqual([
+      [2, "0.049"],
+      [3, "0.065"],
+    ]);
+  });
+
+  it("follow the NBP reference rate for a monthly series, up to today", async () => {
+    // Sold in September 2026: period 2 starts in October, period 3 in November, 4 in December.
+    const id = await bond("ROR0927", "4.25", "0.1");
+    await db.referenceRate.createMany({
+      data: [
+        { validFrom: new Date("2026-03-05"), rate: "4" },
+        { validFrom: new Date("2026-10-08"), rate: "3.75" },
+      ],
+    });
+
+    const detail = await getBond(db, id, now);
+    // The rate for December is fixed on 17 November, which has not come yet.
+    expect(detail?.rates.map((row) => [row.period, row.rate.toFixed(), row.source])).toEqual([
+      [2, "4.1", "COMPUTED"],
+      [3, "3.85", "COMPUTED"],
+    ]);
+  });
+
+  it("leave a series without a margin alone", async () => {
+    const id = await bond("EDO1134", "6.55");
+    await db.inflationReading.create({ data: { year: 2025, month: 9, value: "2.9" } });
+
+    await expect(getBond(db, id, now)).resolves.toMatchObject({ rates: [] });
+    expect((await loadBondSeries(db, [id], now)).get(id)?.laterRates.size).toBe(0);
+  });
+});

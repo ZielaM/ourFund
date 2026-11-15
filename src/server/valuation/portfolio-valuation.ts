@@ -206,7 +206,11 @@ export async function getPortfolioValuation(
       { date: utcToIsoDate(price.date), close: new Decimal(price.close.toString()) },
     ]);
   }
-  const priceOn = createPriceLookup(marketPrices, entries, await loadBondSeries(db, instrumentIds));
+  const priceOn = createPriceLookup(
+    marketPrices,
+    entries,
+    await loadBondSeries(db, instrumentIds, now),
+  );
 
   const valuation = valuePortfolio(accountLedgers, currencyOf, today, priceOn, fxOn);
   const accountName = new Map(portfolio.accounts.map((account) => [account.id, account.name]));

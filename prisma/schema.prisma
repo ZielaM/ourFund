@@ -326,3 +326,23 @@ model BondRate {
   @@id([instrumentId, period])
   @@map("bond_rates")
 }
+
+/// Yearly change of consumer prices announced by GUS for a month, in percent (3.5 for 3.5%).
+/// Inflation-linked treasury bonds take their rate from it.
+model InflationReading {
+  year  Int
+  /// 1 for January.
+  month Int
+  value Decimal @db.Decimal(7, 2)
+
+  @@id([year, month])
+  @@map("inflation_readings")
+}
+
+/// The NBP reference rate, in percent, from the day it came into force until the next change.
+model ReferenceRate {
+  validFrom DateTime @id @map("valid_from") @db.Date
+  rate      Decimal  @db.Decimal(7, 4)
+
+  @@map("reference_rates")
+}
