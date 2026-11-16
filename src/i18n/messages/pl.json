@@ -485,7 +485,11 @@
         "unavailable": "{symbol}: źródło danych chwilowo nie odpowiada.",
         "noSymbol": "{symbol}: brak symbolu notowań. Podaj go w szczegółach instrumentu."
       },
-      "fxFailed": "Kursy walut NBP: {currencies}."
+      "fxFailed": "Kursy walut NBP: {currencies}.",
+      "failedIndexes": {
+        "inflation": "Nie udało się pobrać inflacji z GUS (oprocentowanie obligacji indeksowanych inflacją).",
+        "referenceRate": "Nie udało się pobrać stopy referencyjnej NBP (oprocentowanie obligacji ROR i DOR)."
+      }
     }
   },
   "accountTypes": {
@@ -599,19 +603,24 @@
       "feeValue": "{fee} zł od sztuki (zakupy od 1 września 2024 r.)",
       "ratesTitle": "Oprocentowanie kolejnych okresów",
       "ratesIntro": {
-        "inflation": "Od drugiego roku oprocentowanie to inflacja ogłoszona przez GUS plus marża. Ministerstwo Finansów podaje je przed każdym rocznym okresem. Wpisz je tutaj, gdy zostanie ogłoszone.",
-        "nbpReferenceRate": "Od drugiego miesiąca oprocentowanie to stopa referencyjna NBP plus marża. Wpisz je tutaj, gdy się zmieni; okresy bez wpisu przyjmują ostatnią znaną wartość."
+        "inflation": "Od drugiego roku oprocentowanie to inflacja ogłoszona przez GUS plus marża. Aplikacja wylicza je sama z danych GUS według reguły z listu emisyjnego: liczy się inflacja ogłoszona w miesiącu przed początkiem okresu. Stopa wpisana tutaj ręcznie ma pierwszeństwo.",
+        "nbpReferenceRate": "Od drugiego miesiąca oprocentowanie to stopa referencyjna NBP plus marża. Aplikacja wylicza je sama według reguły z listu emisyjnego: liczy się stopa obowiązująca w dziesiątym dniu roboczym przed początkiem miesiąca, w którym zaczyna się okres. Stopa wpisana tutaj ręcznie ma pierwszeństwo."
       },
-      "ratesEstimate": "Dopóki oprocentowanie okresu nie jest wpisane, wycena przyjmuje ostatnie znane i jest oznaczona jako szacunek.",
+      "ratesEstimate": "Dane odświeżają się razem z notowaniami. Dopóki oprocentowanie okresu nie jest znane, wycena przyjmuje ostatnie znane i jest oznaczona jako szacunek. Wyliczenie wymaga podanej marży.",
       "fixedRate": "Oprocentowanie jest stałe przez cały okres oszczędzania.",
       "period": "Okres odsetkowy",
       "periodOption": "Okres {number}",
       "rate": "Oprocentowanie (%)",
       "saveRate": "Zapisz oprocentowanie",
-      "ratesCaption": "Wpisane oprocentowanie kolejnych okresów",
-      "noRates": "Nie wpisano jeszcze oprocentowania kolejnych okresów.",
+      "ratesCaption": "Oprocentowanie kolejnych okresów",
+      "noRates": "Oprocentowanie kolejnych okresów nie jest jeszcze znane.",
       "deleteRate": "Usuń",
-      "deleteRateLabel": "Usuń oprocentowanie okresu {number}"
+      "deleteRateLabel": "Usuń oprocentowanie okresu {number}",
+      "rateSource": "Skąd",
+      "rateSources": {
+        "MANUAL": "wpisane",
+        "COMPUTED": "wyliczone"
+      }
     }
   },
   "tax": {

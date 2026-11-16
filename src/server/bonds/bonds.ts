@@ -1,7 +1,9 @@
+import { indexedRates, monthKey, type IndexData } from "@/domain/bonds/indexation";
 import type { BondInput } from "@/domain/bonds/inputs";
 import { bondKindOf, bondName, periodCount, type BondKind } from "@/domain/bonds/kinds";
 import type { BondSeries } from "@/domain/bonds/valuation";
 import { Decimal } from "@/domain/decimal";
+import { todayInWarsaw, utcToIsoDate } from "@/domain/portfolio/dates";
 import { TREASURY_MARKET } from "@/domain/portfolio/markets";
 import type { SessionUser } from "@/server/auth/sessions";
 import type { Db } from "@/server/db/types";
@@ -14,7 +16,11 @@ export type BondDetail = {
   /** Rates are in percent, as entered: 5.35 means 5.35% a year. */
   firstRate: Decimal;
   margin: Decimal | null;
-  rates: { period: number; rate: Decimal }[];
+  /**
+   * Later periods with a known rate: entered by hand ("MANUAL") or worked out from GUS's
+   * inflation or the NBP reference rate ("COMPUTED"). An entered rate replaces a computed one.
+   */
+  rates: { period: number; rate: Decimal; source: "MANUAL" | "COMPUTED" }[];
 };
 
 export type CreateBondResult = { ok: true; instrumentId: string } | { ok: false; reason: "exists" };
@@ -66,8 +72,28 @@ export async function createBond(
   }
 }
 
+/** The stored inflation readings and reference rate changes that floating rates follow. */
+export async function loadIndexData(db: Db): Promise<IndexData> {
+  const [readings, changes] = await Promise.all([
+    db.inflationReading.findMany(),
+    db.referenceRate.findMany({ orderBy: { validFrom: "asc" } }),
+  ]);
+
+  return {
+    inflation: new Map(readings.map((row) => [monthKey(row), toDecimal(row.value)])),
+    referenceRates: changes.map((row) => ({
+      validFrom: utcToIsoDate(row.validFrom),
+      rate: toDecimal(row.rate),
+    })),
+  };
+}
+
 /** The terms of a bond series, or null when the instrument is not a treasury bond. */
-export async function getBond(db: Db, instrumentId: string): Promise<BondDetail | null> {
+export async function getBond(
+  db: Db,
+  instrumentId: string,
+  now: Date = new Date(),
+): Promise<BondDetail | null> {
   if (!isUuid(instrumentId)) {
     return null;
   }
@@ -81,13 +107,29 @@ export async function getBond(db: Db, instrumentId: string): Promise<BondDetail 
     return null;
   }
 
+  const margin = series.margin ? toDecimal(series.margin) : null;
+  const entered = new Map(series.rates.map(({ period, rate }) => [period, toDecimal(rate)]));
+  const computed = indexedRates(
+    series.instrument.symbol,
+    margin,
+    await loadIndexData(db),
+    todayInWarsaw(now),
+  );
+
   return {
     instrumentId,
     series: series.instrument.symbol,
     kind: series.kind,
     firstRate: toDecimal(series.firstRate),
-    margin: series.margin ? toDecimal(series.margin) : null,
-    rates: series.rates.map(({ period, rate }) => ({ period, rate: toDecimal(rate) })),
+    margin,
+    rates: [...new Set([...entered.keys(), ...computed.keys()])]
+      .sort((a, b) => a - b)
+      .map((period) => {
+        const manual = entered.get(period);
+        return manual
+          ? { period, rate: manual, source: "MANUAL" as const }
+          : { period, rate: computed.get(period)!, source: "COMPUTED" as const };
+      }),
   };
 }
 
@@ -133,11 +175,18 @@ export async function deleteBondRate(
 export async function loadBondSeries(
   db: Db,
   instrumentIds: readonly string[],
+  now: Date = new Date(),
 ): Promise<Map<string, BondSeries>> {
   const rows = await db.bondSeries.findMany({
     where: { instrumentId: { in: [...instrumentIds] } },
-    include: { rates: true },
+    include: { rates: true, instrument: { select: { symbol: true } } },
   });
+  if (rows.length === 0) {
+    return new Map();
+  }
+
+  const indexes = await loadIndexData(db);
+  const today = todayInWarsaw(now);
 
   // Stored in percent, used as fractions.
   const fraction = (value: { toString(): string }) => toDecimal(value).div(100);
@@ -148,7 +197,18 @@ export async function loadBondSeries(
       {
         kind: row.kind,
         firstRate: fraction(row.firstRate),
-        laterRates: new Map(row.rates.map(({ period, rate }) => [period, fraction(rate)])),
+        // Rates worked out from the indexes first, so that entered ones replace them.
+        laterRates: new Map([
+          ...[
+            ...indexedRates(
+              row.instrument.symbol,
+              row.margin ? toDecimal(row.margin) : null,
+              indexes,
+              today,
+            ),
+          ].map(([period, rate]) => [period, rate.div(100)] as const),
+          ...row.rates.map(({ period, rate }) => [period, fraction(rate)] as const),
+        ]),
       },
     ]),
   );

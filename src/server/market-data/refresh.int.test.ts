@@ -38,6 +38,10 @@ function fakeProviders(overrides: Partial<MarketDataProviders> = {}) {
   return {
     quotes: vi.fn(overrides.quotes ?? (async () => closes())),
     rates: vi.fn(overrides.rates ?? (async () => rates())),
+    inflation: vi.fn(overrides.inflation ?? (async () => ({ ok: true as const, readings: [] }))),
+    referenceRates: vi.fn(
+      overrides.referenceRates ?? (async () => ({ ok: true as const, changes: [] })),
+    ),
     pauseMs: overrides.pauseMs ?? 0,
   };
 }
@@ -351,6 +355,98 @@ describe("refreshMarketData: dividends and splits", () => {
       ["2026-06-15", "DIVIDEND", "1.5"],
       ["2026-11-12", "DIVIDEND", "2.5"],
     ]);
+  });
+});
+
+describe("refreshMarketData: indexes behind bond rates", () => {
+  async function bond(symbol: string, kind: "EDO" | "ROR" | "TOS") {
+    const id = await instrument(symbol, "SKARB", "PLN");
+    await db.instrument.update({ where: { id }, data: { priceSource: "TREASURY", type: "BOND" } });
+    await db.bondSeries.create({ data: { instrumentId: id, kind, firstRate: "5", margin: "1" } });
+  }
+  const reading = (month: number, value: string) => ({ month, value: new Decimal(value) });
+  const readings = async () =>
+    (await db.inflationReading.findMany({ orderBy: [{ year: "asc" }, { month: "asc" }] })).map(
+      (row) => [row.year, row.month, new Decimal(row.value.toString()).toFixed()],
+    );
+
+  it("asks for nothing while the catalogue has no floating-rate bonds", async () => {
+    await bond("TOS1128", "TOS");
+    const providers = fakeProviders();
+
+    await refreshMarketData(db, providers, options);
+
+    expect(providers.inflation).not.toHaveBeenCalled();
+    expect(providers.referenceRates).not.toHaveBeenCalled();
+  });
+
+  it("stores inflation from the year a series was sold, and skips complete years later", async () => {
+    await bond("EDO1134", "EDO");
+    const full = Array.from({ length: 12 }, (_, index) => reading(index + 1, "3"));
+    const providers = fakeProviders({
+      inflation: async (year) => ({
+        ok: true,
+        readings: year === 2024 ? [] : year === 2025 ? full : [reading(9, "4.1")],
+      }),
+    });
+
+    await refreshMarketData(db, providers, options);
+    await refreshMarketData(db, providers, options);
+
+    expect(providers.inflation.mock.calls.map(([year]) => year)).toEqual([
+      2024, 2025, 2026, 2024, 2026,
+    ]);
+    expect(providers.referenceRates).not.toHaveBeenCalled();
+    await expect(readings()).resolves.toHaveLength(13);
+    expect((await readings()).at(-1)).toEqual([2026, 9, "4.1"]);
+  });
+
+  it("stores the changes of the reference rate and updates a corrected one", async () => {
+    await bond("ROR0627", "ROR");
+    const changes = (rate: string) => async () => ({
+      ok: true as const,
+      changes: [{ validFrom: "2026-03-05", rate: new Decimal(rate) }],
+    });
+
+    await refreshMarketData(db, fakeProviders({ referenceRates: changes("4") }), options);
+    await refreshMarketData(db, fakeProviders({ referenceRates: changes("3.75") }), options);
+
+    const stored = await db.referenceRate.findMany();
+    expect(stored.map((row) => new Decimal(row.rate.toString()).toFixed())).toEqual(["3.75"]);
+  });
+
+  it("reports sources that could not be read and keeps what is stored", async () => {
+    await bond("EDO1135", "EDO");
+    await bond("ROR0627", "ROR");
+    await db.inflationReading.create({ data: { year: 2026, month: 9, value: "4.1" } });
+    const unavailable = async () => ({ ok: false as const, reason: "unavailable" as const });
+
+    const report = await refreshMarketData(
+      db,
+      fakeProviders({ inflation: unavailable, referenceRates: unavailable }),
+      options,
+    );
+
+    expect(report.indexes.failed).toEqual(["referenceRate", "inflation"]);
+    await expect(readings()).resolves.toEqual([[2026, 9, "4.1"]]);
+    await expect(getLastRefresh(db)).resolves.toMatchObject({
+      indexes: { failed: ["referenceRate", "inflation"] },
+    });
+  });
+
+  it("reads a report stored before indexes existed", async () => {
+    await db.appSetting.create({
+      data: {
+        key: "marketData.lastRefresh",
+        value: {
+          finishedAt: "2026-11-13T12:00:00.000Z",
+          instruments: { updated: 1, failed: [] },
+          currencies: { updated: 0, failed: [] },
+        },
+      },
+    });
+
+    await expect(getLastRefresh(db)).resolves.toMatchObject({ indexes: { failed: [] } });
   });
 });
 

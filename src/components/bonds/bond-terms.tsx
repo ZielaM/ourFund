@@ -82,36 +82,42 @@ export function BondTerms({ bond }: { bond: BondDetail }) {
             {bond.rates.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("noRates")}</p>
             ) : (
-              <DataTable className="max-w-md">
+              <DataTable className="max-w-xl">
                 <Table>
                   <TableCaption className="sr-only">{t("ratesCaption")}</TableCaption>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("period")}</TableHead>
                       <TableHead className="text-right">{t("rate")}</TableHead>
+                      <TableHead>{t("rateSource")}</TableHead>
                       <TableHead>
                         <span className="sr-only">{t("deleteRate")}</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bond.rates.map(({ period, rate }) => (
+                    {bond.rates.map(({ period, rate, source }) => (
                       <TableRow key={period}>
                         <TableCell>{t("periodOption", { number: period })}</TableCell>
                         <TableCell className="text-right tabular-nums">{percent(rate)}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {t(`rateSources.${source}`)}
+                        </TableCell>
                         <TableCell className="text-right">
-                          <ActionForm
-                            action={deleteBondRateAction.bind(null, bond.instrumentId, period)}
-                            className="items-end gap-1"
-                          >
-                            <button
-                              type="submit"
-                              aria-label={t("deleteRateLabel", { number: period })}
-                              className="cursor-pointer underline underline-offset-4"
+                          {source === "MANUAL" ? (
+                            <ActionForm
+                              action={deleteBondRateAction.bind(null, bond.instrumentId, period)}
+                              className="items-end gap-1"
                             >
-                              {t("deleteRate")}
-                            </button>
-                          </ActionForm>
+                              <button
+                                type="submit"
+                                aria-label={t("deleteRateLabel", { number: period })}
+                                className="cursor-pointer underline underline-offset-4"
+                              >
+                                {t("deleteRate")}
+                              </button>
+                            </ActionForm>
+                          ) : null}
                         </TableCell>
                       </TableRow>
                     ))}

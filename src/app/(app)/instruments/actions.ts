@@ -68,7 +68,10 @@ export async function refreshMarketDataAction(
   }
 
   const report = await refreshMarketDataOnce(getDb(), providers);
-  const failed = report.instruments.failed.length + report.currencies.failed.length;
+  const failed =
+    report.instruments.failed.length +
+    report.currencies.failed.length +
+    report.indexes.failed.length;
 
   revalidatePath("/instruments", "layout");
   return formSucceeded(failed > 0 ? "marketData.refreshedWithErrors" : "marketData.refreshed");

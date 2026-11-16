@@ -67,14 +67,18 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   totals carry an `incomplete` flag. Without a market price a position is valued at the price
   of its last trade and reported in `missing.marketPrices`.
 - Retail treasury bonds (`src/domain/bonds/`, `src/server/bonds/`) have no quotes. An instrument
-  with `priceSource = TREASURY` carries a `BondSeries` (kind, first-period rate, margin) and
-  optional `BondRate` rows for later periods, all entered by the user: there is no official
-  machine-readable source, and the form on obligacjeskarbowe.pl rejects automated clients, which
-  we do not work around. `bondValue` prices one bond from its purchase date, so the valuation
-  prices **each lot separately** (`PriceOn` takes the lot's purchase date). A floating-rate
-  period without an entered rate reuses the last known one; the price is then `estimated` and
-  the series is listed in `missing.bondRates`. Interest that is paid out instead of capitalised
-  (OTS, ROR, DOR, COI) is recorded by the user as an `INTEREST` transaction.
+  with `priceSource = TREASURY` carries a `BondSeries` (kind, first-period rate, margin).
+  `bondValue` prices one bond from its purchase date, so the valuation prices **each lot
+  separately** (`PriceOn` takes the lot's purchase date). Rates of later periods of
+  floating-rate series are worked out by `indexedRates` (`indexation.ts`) with the rules quoted
+  from the Ministry's issue letters: GUS inflation announced the month before the period plus
+  the margin, or the NBP reference rate of the tenth business day before the month plus the
+  margin. The refresh stores both indexes (`InflationReading`, `ReferenceRate`); the fixture
+  provider has none, so e2e bonds keep the rates the tests enter. A `BondRate` entered by hand
+  always wins. A period without a known rate reuses the last known one; the price is then
+  `estimated` and the series is listed in `missing.bondRates`. obligacjeskarbowe.pl rejects
+  automated clients, which we do not work around. Interest that is paid out instead of
+  capitalised (OTS, ROR, DOR, COI) is recorded by the user as an `INTEREST` transaction.
 - Returns (TWR, XIRR) are measured on the securities only: buying is a contribution, selling
   and dividends are withdrawals. Deposits and withdrawals of cash are ignored on purpose, so
   results do not depend on whether a user records them. Rates are plain numbers; money is not.

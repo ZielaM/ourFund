@@ -8,6 +8,12 @@ import {
   type DividendEvent,
   type SplitEvent,
 } from "@/domain/market-data/yahoo";
+import {
+  parseGusInflation,
+  parseNbpReferenceRates,
+  type InflationReading,
+  type ReferenceRateChange,
+} from "@/domain/market-data/indexes";
 import { Decimal } from "@/domain/decimal";
 import type { IsoDate } from "@/domain/portfolio/dates";
 
@@ -19,7 +25,12 @@ export type QuoteResult =
 
 export type RatesResult = { ok: true; rates: DailyRate[] } | { ok: false; reason: "unavailable" };
 
-/** Where daily prices and exchange rates come from. */
+export type InflationResult =
+  { ok: true; readings: InflationReading[] } | { ok: false; reason: "unavailable" };
+export type ReferenceRatesResult =
+  { ok: true; changes: ReferenceRateChange[] } | { ok: false; reason: "unavailable" };
+
+/** Where daily prices, exchange rates and the indexes behind bond rates come from. */
 export type MarketDataProviders = {
   /**
    * Daily closes of `symbol` between the two dates (inclusive), in `currency`, with the
@@ -29,6 +40,10 @@ export type MarketDataProviders = {
   quotes(symbol: string, currency: string, from: IsoDate, to: IsoDate): Promise<QuoteResult>;
   /** PLN per one unit of `currency` for each day NBP published a rate. */
   rates(currency: string, from: IsoDate, to: IsoDate): Promise<RatesResult>;
+  /** GUS's yearly change of consumer prices for each published month of `year`. */
+  inflation(year: number): Promise<InflationResult>;
+  /** Every change of the NBP reference rate, oldest first. */
+  referenceRates(): Promise<ReferenceRatesResult>;
   /**
    * Pause between two requests, in milliseconds, to stay a polite client of the services
    * behind the provider. Zero when nothing is requested over the network.
@@ -61,6 +76,13 @@ async function getJson(fetchFn: Fetch, url: string): Promise<{ status: number; j
 
   return { status: response.status, json };
 }
+
+/**
+ * "Consumer prices, same month of the previous year = 100" in GUS's publication store. The
+ * series was restarted with the 2026 classification: one indicator from 2026, one before.
+ */
+const GUS_INFLATION_INDICATORS = [2728, 1832];
+const NBP_RATES_ARCHIVE_URL = "https://static.nbp.pl/dane/stopy/stopy_procentowe_archiwum.xml";
 
 const toUnixSeconds = (date: IsoDate) => Date.parse(`${date}T00:00:00.000Z`) / 1000;
 
@@ -133,6 +155,44 @@ export function createLiveProviders(fetchFn: Fetch = fetch): MarketDataProviders
 
       return { ok: true, rates };
     },
+
+    async inflation(year) {
+      try {
+        for (const indicator of GUS_INFLATION_INDICATORS) {
+          const url =
+            `https://api-sdp.stat.gov.pl/api/indicators/indicator-data-indicator` +
+            `?id-wskaznik=${indicator}&id-rok=${year}&lang=pl`;
+          const { status, json } = await getJson(fetchFn, url);
+          // An indicator answers 404 for a year it does not cover.
+          if (status === 404) {
+            continue;
+          }
+          const readings = status === 200 ? parseGusInflation(json) : null;
+          return readings ? { ok: true, readings } : { ok: false, reason: "unavailable" };
+        }
+        // Covered by neither: a year without published months.
+        return { ok: true, readings: [] };
+      } catch {
+        return { ok: false, reason: "unavailable" };
+      }
+    },
+
+    async referenceRates() {
+      try {
+        const response = await fetchFn(NBP_RATES_ARCHIVE_URL, {
+          // No Accept header: the server answers 406 to "application/xml".
+          headers: { "User-Agent": USER_AGENT },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+        const changes =
+          response.status === 200 ? parseNbpReferenceRates(await response.text()) : null;
+        return changes && changes.length > 0
+          ? { ok: true, changes }
+          : { ok: false, reason: "unavailable" };
+      } catch {
+        return { ok: false, reason: "unavailable" };
+      }
+    },
   };
 }
 
@@ -188,6 +248,15 @@ export function createFixtureProviders(): MarketDataProviders {
     async rates(currency, from, to) {
       const rate = new Decimal(FIXTURE_RATES[currency] ?? "1");
       return { ok: true, rates: weekdays(from, to).map((date) => ({ date, rate })) };
+    },
+
+    // No index data: bonds in end-to-end tests keep exactly the rates the tests enter.
+    async inflation() {
+      return { ok: true, readings: [] };
+    },
+
+    async referenceRates() {
+      return { ok: true, changes: [] };
     },
   };
 }
