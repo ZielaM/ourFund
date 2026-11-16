@@ -21,9 +21,11 @@ const MAX_RATE_AGE_DAYS = 10;
  * How an instrument is taxed:
  * - `security`: shares, ETFs and listed bonds; sales settled yearly, cost matched FIFO,
  * - `crypto`: virtual currencies; every purchase is a cost of the year it was made in,
- * - `savingsBond`: retail treasury bonds; the payer withholds the tax at redemption.
+ * - `savingsBond`: retail treasury bonds; the payer withholds the tax at redemption,
+ * - `commodity`: physical gold and the like; not a security, so its sale is not part of
+ *   PIT-38 at all. It is listed so that nothing looks forgotten.
  */
-export type TaxCategory = "security" | "crypto" | "savingsBond";
+export type TaxCategory = "security" | "crypto" | "savingsBond" | "commodity";
 
 export type TaxInstrument = {
   currency: string;
@@ -135,6 +137,11 @@ export type TaxYear = {
     income: Decimal | null;
     sales: SaleLine[];
   };
+  /** Sales of physical commodities such as gold; not securities, so outside PIT-38. */
+  commodities: {
+    income: Decimal | null;
+    sales: SaleLine[];
+  };
   /** Currencies whose NBP rate was missing for some day of this report. */
   missingRates: string[];
   /** Nothing to report this year. */
@@ -161,6 +168,7 @@ function difference(a: Decimal | null, b: Decimal | null): Decimal | null {
 type Draft = {
   securities: SaleLine[];
   savingsBonds: SaleLine[];
+  commodities: SaleLine[];
   crypto: CryptoLine[];
   foreign: IncomeLine[];
   domestic: IncomeLine[];
@@ -188,6 +196,7 @@ export function computeTaxYears(
       draft = {
         securities: [],
         savingsBonds: [],
+        commodities: [],
         crypto: [],
         foreign: [],
         domestic: [],
@@ -330,7 +339,13 @@ export function computeTaxYears(
           income: difference(revenue, costs),
         };
 
-        (instrument.category === "savingsBond" ? draft.savingsBonds : draft.securities).push(line);
+        const lines =
+          instrument.category === "savingsBond"
+            ? draft.savingsBonds
+            : instrument.category === "commodity"
+              ? draft.commodities
+              : draft.securities;
+        lines.push(line);
       }
     }
   }
@@ -383,6 +398,7 @@ export function computeTaxYears(
 
     const domestic = byDate(draft.domestic);
     const bonds = byDate(draft.savingsBonds);
+    const commodities = byDate(draft.commodities);
 
     years.push({
       year,
@@ -413,9 +429,19 @@ export function computeTaxYears(
         income: sumOrNull(bonds.map((line) => line.income)),
         sales: bonds,
       },
+      commodities: {
+        income: sumOrNull(commodities.map((line) => line.income)),
+        sales: commodities,
+      },
       missingRates: [...draft.missing].sort(),
       empty:
-        sales.length + cryptoLines.length + foreign.length + domestic.length + bonds.length === 0,
+        sales.length +
+          cryptoLines.length +
+          foreign.length +
+          domestic.length +
+          bonds.length +
+          commodities.length ===
+        0,
     });
 
     carriedCosts = carryForward;

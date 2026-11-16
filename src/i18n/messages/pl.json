@@ -273,6 +273,9 @@
     },
     "events": {
       "notFound": "Nie znaleziono tego zdarzenia."
+    },
+    "priceSource": {
+      "goldNeedsPln": "Cena złota NBP jest w złotych. Wybierz ją dla instrumentu notowanego w PLN."
     }
   },
   "notFound": {
@@ -503,6 +506,7 @@
     "ETF": "ETF",
     "BOND": "Obligacja",
     "CRYPTO": "Kryptowaluta",
+    "COMMODITY": "Metal lub surowiec",
     "INDEX": "Indeks"
   },
   "markets": {
@@ -535,12 +539,14 @@
       "label": "Skąd brać kursy",
       "options": {
         "YAHOO": "Automatycznie (Yahoo Finance)",
+        "NBP_GOLD": "Cena złota NBP (zł za gram)",
         "MANUAL": "Wpisuję ręcznie"
       },
       "quoteSymbol": "Symbol w Yahoo Finance",
       "hintDefault": "Puste pole oznacza symbol domyślny: {symbol}.",
       "hintRequired": "Dla tego rynku symbolu nie da się ustalić automatycznie. Znajdziesz go na finance.yahoo.com.",
-      "save": "Zapisz źródło"
+      "save": "Zapisz źródło",
+      "goldHint": "Przy cenie złota NBP liczba sztuk to gramy czystego złota: uncja to 31,1035 g. Symbol w Yahoo Finance nie jest wtedy używany."
     },
     "manual": {
       "title": "Kurs wpisany ręcznie",
@@ -559,7 +565,8 @@
       "sources": {
         "YAHOO": "Yahoo Finance",
         "MANUAL": "ręcznie",
-        "TREASURY": "z warunków emisji"
+        "TREASURY": "z warunków emisji",
+        "NBP_GOLD": "NBP"
       },
       "delete": "Usuń",
       "deleteLabel": "Usuń kurs z dnia {date}"
@@ -570,6 +577,7 @@
     "ETF": "ETF-y",
     "BOND": "Obligacje",
     "CRYPTO": "Kryptowaluty",
+    "COMMODITY": "Metale i surowce",
     "CASH": "Gotówka",
     "INDEX": "Indeksy"
   },
@@ -697,6 +705,8 @@
       "domesticBody": "Brutto {gross}, podatek pobrany przez płatnika {withheld}. Podatek odprowadził już płatnik.",
       "bonds": "Wykup obligacji oszczędnościowych",
       "bondsBody": "Zysk {income}. Podatek od odsetek pobiera przy wykupie bank obsługujący obligacje.",
+      "commodities": "Sprzedaż metali i surowców",
+      "commoditiesBody": "Wynik {income}. Fizyczne złoto i podobne aktywa nie są papierami wartościowymi, więc ich sprzedaż nie trafia do PIT-38. Czy i jak ją rozliczyć, zależy między innymi od tego, jak długo je posiadano.",
       "accounts": "Rachunki IKE, IKZE i OKI",
       "accountsBody": "Transakcje na tych rachunkach nie wchodzą do zestawienia: {accounts}.",
       "accountEntry": "{name} ({type}, portfel {portfolio})",

@@ -79,7 +79,9 @@ export async function getTaxReport(
             ? "crypto"
             : instrument.priceSource === "TREASURY"
               ? "savingsBond"
-              : "security",
+              : instrument.type === "COMMODITY"
+                ? "commodity"
+                : "security",
         foreign: !isDomesticMarket(instrument.market),
       },
     ]),

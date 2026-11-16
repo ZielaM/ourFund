@@ -106,6 +106,9 @@ export default async function InstrumentPage({ params }: PageProps<"/instruments
                 autoComplete="off"
                 spellCheck={false}
               />
+              {instrument.type === "COMMODITY" ? (
+                <p className="text-sm text-muted-foreground">{t("source.goldHint")}</p>
+              ) : null}
               <SubmitButton className="self-start">{t("source.save")}</SubmitButton>
             </ActionForm>
           </section>

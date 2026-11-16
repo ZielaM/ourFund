@@ -119,6 +119,8 @@ enum InstrumentType {
   ETF
   BOND
   CRYPTO
+  /// Physical holdings such as gold; not a security.
+  COMMODITY
   /// Not tradable: exists only to be quoted and used as a benchmark.
   INDEX
 
@@ -256,6 +258,8 @@ enum PriceSource {
   MANUAL
   /// Retail treasury bonds: no quotes, the value follows from the terms of the series.
   TREASURY
+  /// The price of a gram of gold published by the National Bank of Poland, in PLN.
+  NBP_GOLD
 
   @@map("price_source")
 }

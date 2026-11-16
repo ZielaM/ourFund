@@ -7,6 +7,9 @@ import { isoDateToUtc, todayInWarsaw, utcToIsoDate, type IsoDate } from "@/domai
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { MarketDataProviders, QuoteFailure } from "./providers";
 
+/** Price sources the refresh fetches; the others are entered by hand or computed. */
+const FETCHED_SOURCES = ["YAHOO", "NBP_GOLD"] as const;
+
 export const LAST_REFRESH_KEY = "marketData.lastRefresh";
 
 /** Prices before the first transaction that are still fetched, for charts and rate lookups. */
@@ -79,7 +82,7 @@ export async function refreshMarketData(
   const [instruments, firstTransactions, priceRanges, benchmarked] = await Promise.all([
     db.instrument.findMany({
       where: {
-        priceSource: "YAHOO",
+        priceSource: { in: [...FETCHED_SOURCES] },
         OR: [{ transactions: { some: {} } }, { benchmarkFor: { some: {} } }],
       },
       orderBy: { symbol: "asc" },
@@ -91,7 +94,7 @@ export async function refreshMarketData(
     }),
     db.price.groupBy({
       by: ["instrumentId"],
-      where: { source: "YAHOO" },
+      where: { source: { in: [...FETCHED_SOURCES] } },
       _min: { date: true },
       _max: { date: true },
     }),
@@ -132,7 +135,8 @@ export async function refreshMarketData(
   };
 
   for (const [index, instrument] of instruments.entries()) {
-    const quoteSymbol = effectiveQuoteSymbol(instrument);
+    const gold = instrument.priceSource === "NBP_GOLD";
+    const quoteSymbol = gold ? null : effectiveQuoteSymbol(instrument);
     const fail = (reason: QuoteFailure | "noSymbol") =>
       report.instruments.failed.push({ symbol: instrument.symbol, quoteSymbol, reason });
 
@@ -142,7 +146,12 @@ export async function refreshMarketData(
       continue;
     }
 
-    if (!quoteSymbol) {
+    if (gold && instrument.currency !== "PLN") {
+      // NBP quotes gold in złoty only.
+      fail("currencyMismatch");
+      continue;
+    }
+    if (!gold && !quoteSymbol) {
       fail("noSymbol");
       continue;
     }
@@ -166,7 +175,9 @@ export async function refreshMarketData(
     if (index > 0) {
       await sleep(pauseMs);
     }
-    const result = await providers.quotes(quoteSymbol, instrument.currency, range.from, range.to);
+    const result = quoteSymbol
+      ? await providers.quotes(quoteSymbol, instrument.currency, range.from, range.to)
+      : await providers.gold(range.from, range.to);
 
     if (!result.ok) {
       fail(result.reason);
@@ -192,7 +203,7 @@ export async function refreshMarketData(
         instrumentId: instrument.id,
         date: isoDateToUtc(close.date),
         close: close.close.toFixed(),
-        source: "YAHOO" as const,
+        source: instrument.priceSource,
       }));
 
     const events = [
@@ -213,7 +224,7 @@ export async function refreshMarketData(
       db.price.deleteMany({
         where: {
           instrumentId: instrument.id,
-          source: "YAHOO",
+          source: { in: [...FETCHED_SOURCES] },
           date: { in: rows.map((row) => row.date) },
         },
       }),

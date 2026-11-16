@@ -284,6 +284,67 @@ describe("live quotes: dividends and splits", () => {
   });
 });
 
+describe("live gold prices (NBP)", () => {
+  it("asks year by year and returns the price of a gram for each day", async () => {
+    const { fetchFn, urls } = fakeFetch([
+      { status: 200, body: [{ data: "2025-12-30", cena: 480.1 }] },
+      { status: 200, body: [{ data: "2026-11-12", cena: 513.76 }] },
+    ]);
+
+    const result = await createLiveProviders(fetchFn).gold("2025-06-01", "2026-11-13");
+
+    expect(urls).toEqual([
+      "https://api.nbp.pl/api/cenyzlota/2025-06-01/2026-05-31/?format=json",
+      "https://api.nbp.pl/api/cenyzlota/2026-06-01/2026-11-13/?format=json",
+    ]);
+    expect(result).toMatchObject({ ok: true, dividends: [], splits: [] });
+    expect(result.ok && result.closes.map((c) => [c.date, c.close.toFixed(2)])).toEqual([
+      ["2025-12-30", "480.10"],
+      ["2026-11-12", "513.76"],
+    ]);
+  });
+
+  it("never asks for days before NBP started publishing the price", async () => {
+    const early = fakeFetch([{ status: 404, body: "" }]);
+    const none = fakeFetch([]);
+
+    await expect(
+      createLiveProviders(early.fetchFn).gold("2012-06-01", "2013-02-01"),
+    ).resolves.toMatchObject({
+      ok: true,
+      closes: [],
+    });
+    expect(early.urls).toEqual([
+      "https://api.nbp.pl/api/cenyzlota/2013-01-02/2013-02-01/?format=json",
+    ]);
+    await expect(
+      createLiveProviders(none.fetchFn).gold("2010-01-01", "2012-12-31"),
+    ).resolves.toMatchObject({
+      ok: true,
+      closes: [],
+    });
+  });
+
+  it("reports the price as unavailable on an error or an unexpected answer", async () => {
+    const unavailable = { ok: false, reason: "unavailable" };
+    const broken = fakeFetch([{ status: 500, body: "oops" }]);
+    const odd = fakeFetch([{ status: 200, body: { rates: [] } }]);
+    const offline = vi.fn(async () => {
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+
+    await expect(
+      createLiveProviders(broken.fetchFn).gold("2026-11-09", "2026-11-10"),
+    ).resolves.toEqual(unavailable);
+    await expect(
+      createLiveProviders(odd.fetchFn).gold("2026-11-09", "2026-11-10"),
+    ).resolves.toEqual(unavailable);
+    await expect(createLiveProviders(offline).gold("2026-11-09", "2026-11-10")).resolves.toEqual(
+      unavailable,
+    );
+  });
+});
+
 describe("live indexes for bond rates", () => {
   it("reads a year of GUS inflation readings", async () => {
     const { fetchFn, urls } = fakeFetch([
@@ -403,6 +464,15 @@ describe("fixture providers", () => {
     ]);
     expect(plain.ok && [plain.splits, plain.dividends]).toEqual([[], []]);
     expect(early.ok && [early.splits, early.dividends]).toEqual([[], []]);
+  });
+
+  it("serve a constant price of gold on weekdays", async () => {
+    const result = await providers.gold("2026-11-06", "2026-11-09");
+
+    expect(result.ok && result.closes.map((c) => [c.date, c.close.toFixed()])).toEqual([
+      ["2026-11-06", "500"],
+      ["2026-11-09", "500"],
+    ]);
   });
 
   it("know no index data, so bonds keep the rates the tests enter", async () => {

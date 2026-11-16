@@ -51,6 +51,16 @@ for (const currency of ["USD", "EUR", "JPY"]) {
   }
 }
 
+const gold = await providers.gold(from, today);
+if (gold.ok) {
+  const last = gold.closes.at(-1);
+  console.log(`NBP gold: ${gold.closes.length} prices, last ${last?.date} ${last?.close} PLN/g`);
+  failed ||= gold.closes.length === 0;
+} else {
+  console.log(`NBP gold: ${gold.reason}`);
+  failed = true;
+}
+
 // What floating-rate treasury bonds follow.
 const inflation = await providers.inflation(Number(today.slice(0, 4)) - 1);
 if (inflation.ok) {

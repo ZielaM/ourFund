@@ -191,6 +191,59 @@ test("portfel porównuje się z wybranym benchmarkiem", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Na tle benchmarku" })).toHaveCount(0);
 });
 
+test("złoto wycenia się po cenie NBP za gram", async ({ page }) => {
+  await page.goto("/instruments");
+  await field(page, "Symbol").fill("ZLOTO");
+  await field(page, "Nazwa").fill("Złoto fizyczne");
+  await field(page, "Rodzaj").selectOption({ label: "Metal lub surowiec" });
+  await field(page, "Rynek").selectOption({ label: "Inny" });
+  await page.getByRole("button", { name: "Dodaj instrument" }).click();
+  await expect(page.getByText("Instrument ZLOTO został dodany.")).toBeVisible();
+
+  await openInstrument(page, "ZLOTO");
+  await field(page, "Skąd brać kursy").selectOption({ label: "Cena złota NBP (zł za gram)" });
+  await page.getByRole("button", { name: "Zapisz źródło" }).click();
+  await expect(page.getByText("Źródło notowań zostało zapisane.")).toBeVisible();
+
+  // Twenty grams bought at 480 zł; the fixture price of gold is 500 zł a gram.
+  await page.goto("/");
+  await page.getByRole("link", { name: "Otwórz portfel Notowania" }).click();
+  await page.getByRole("link", { name: "Dodaj transakcję" }).click();
+  await field(page, "Data").fill("2026-11-03");
+  await field(page, "Instrument").selectOption({ label: "ZLOTO (Złoto fizyczne)" });
+  await field(page, "Liczba").fill("20");
+  await field(page, /Cena za sztukę/).fill("480");
+  await page.getByRole("button", { name: "Dodaj transakcję" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Notowania" })).toBeVisible();
+
+  await page.goto("/instruments");
+  await page.getByRole("button", { name: "Odśwież notowania" }).click();
+  await expect(page.getByText("Notowania zostały odświeżone.")).toBeVisible();
+  await expect(row(page, "ZLOTO")).toContainText("500,00");
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Otwórz portfel Notowania" }).click();
+  const position = page
+    .getByRole("table", { name: "Otwarte pozycje" })
+    .getByRole("row", { name: /ZLOTO/ });
+  await expect(position).toContainText(/10\s000,00\szł/);
+  await expect(page.getByText("Metale i surowce")).toBeVisible();
+
+  // A source in złoty cannot serve an instrument quoted in another currency.
+  await page.goto("/instruments");
+  await field(page, "Symbol").fill("XAUUSD");
+  await field(page, "Nazwa").fill("Złoto w dolarach");
+  await field(page, "Rodzaj").selectOption({ label: "Metal lub surowiec" });
+  await field(page, "Rynek").selectOption({ label: "Inny" });
+  await field(page, "Waluta notowań").selectOption("USD");
+  await page.getByRole("button", { name: "Dodaj instrument" }).click();
+  await expect(page.getByText("Instrument XAUUSD został dodany.")).toBeVisible();
+  await openInstrument(page, "XAUUSD");
+  await field(page, "Skąd brać kursy").selectOption({ label: "Cena złota NBP (zł za gram)" });
+  await page.getByRole("button", { name: "Zapisz źródło" }).click();
+  await expect(page.getByText(/Cena złota NBP jest w złotych/)).toBeVisible();
+});
+
 test("nieznany instrument daje stronę 404", async ({ page }) => {
   await page.goto("/instruments/00000000-0000-4000-8000-000000000000");
 

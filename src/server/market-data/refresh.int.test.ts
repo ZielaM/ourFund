@@ -38,6 +38,7 @@ function fakeProviders(overrides: Partial<MarketDataProviders> = {}) {
   return {
     quotes: vi.fn(overrides.quotes ?? (async () => closes())),
     rates: vi.fn(overrides.rates ?? (async () => rates())),
+    gold: vi.fn(overrides.gold ?? (async () => closes())),
     inflation: vi.fn(overrides.inflation ?? (async () => ({ ok: true as const, readings: [] }))),
     referenceRates: vi.fn(
       overrides.referenceRates ?? (async () => ({ ok: true as const, changes: [] })),
@@ -50,7 +51,7 @@ async function instrument(
   symbol: string,
   market = "GPW",
   currency = "PLN",
-  extra: { priceSource?: "YAHOO" | "MANUAL"; quoteSymbol?: string } = {},
+  extra: { priceSource?: "YAHOO" | "MANUAL" | "NBP_GOLD"; quoteSymbol?: string } = {},
 ): Promise<string> {
   const created = await db.instrument.create({
     data: { symbol, market, name: symbol, type: "STOCK", currency, ...extra },
@@ -354,6 +355,61 @@ describe("refreshMarketData: dividends and splits", () => {
     await expect(events(cdr)).resolves.toEqual([
       ["2026-06-15", "DIVIDEND", "1.5"],
       ["2026-11-12", "DIVIDEND", "2.5"],
+    ]);
+  });
+});
+
+describe("refreshMarketData: gold", () => {
+  it("takes the price of gold from NBP, without a quote symbol, and stores it as such", async () => {
+    const gold = await instrument("ZLOTO", "OTHER", "PLN", { priceSource: "NBP_GOLD" });
+    await bought(gold, "2026-11-02");
+    const providers = fakeProviders({ gold: async () => closes(["2026-11-12", "513.76"]) });
+
+    const report = await refreshMarketData(db, providers, options);
+
+    expect(providers.gold).toHaveBeenCalledWith("2026-10-26", "2026-11-13");
+    expect(providers.quotes).not.toHaveBeenCalled();
+    expect(report.instruments).toEqual({ updated: 1, failed: [] });
+    await expect(storedPrices(gold)).resolves.toEqual([["2026-11-12", "513.76", "NBP_GOLD"]]);
+  });
+
+  it("replaces the moving last price on later runs and keeps a price entered by hand", async () => {
+    const gold = await instrument("ZLOTO", "OTHER", "PLN", { priceSource: "NBP_GOLD" });
+    await bought(gold, "2026-11-02");
+    await setManualPrice(db, ania, gold, { date: "2026-11-10", close: new Decimal("500") }, now);
+    await refreshMarketData(
+      db,
+      fakeProviders({
+        gold: async () =>
+          closes(["2026-10-26", "510"], ["2026-11-10", "516.29"], ["2026-11-12", "513"]),
+      }),
+      options,
+    );
+
+    await refreshMarketData(
+      db,
+      fakeProviders({ gold: async () => closes(["2026-11-12", "513.76"]) }),
+      options,
+    );
+
+    await expect(storedPrices(gold)).resolves.toEqual([
+      ["2026-10-26", "510", "NBP_GOLD"],
+      ["2026-11-10", "500", "MANUAL"],
+      ["2026-11-12", "513.76", "NBP_GOLD"],
+    ]);
+  });
+
+  it("refuses gold for an instrument that is not quoted in złoty", async () => {
+    const ounce = await instrument("XAU", "OTHER", "USD");
+    await db.instrument.update({ where: { id: ounce }, data: { priceSource: "NBP_GOLD" } });
+    await bought(ounce, "2026-11-02", "USD");
+    const providers = fakeProviders();
+
+    const report = await refreshMarketData(db, providers, options);
+
+    expect(providers.gold).not.toHaveBeenCalled();
+    expect(report.instruments.failed).toEqual([
+      { symbol: "XAU", quoteSymbol: null, reason: "currencyMismatch" },
     ]);
   });
 });
@@ -754,6 +810,19 @@ describe("prices", () => {
       priceSource: "MANUAL",
       quoteSymbol: null,
     });
+  });
+
+  it("accepts the NBP gold price only for an instrument quoted in złoty", async () => {
+    const gold = await instrument("ZLOTO", "OTHER", "PLN");
+    const ounce = await instrument("XAU", "OTHER", "USD");
+    const settings = { priceSource: "NBP_GOLD" as const, quoteSymbol: null };
+
+    await expect(updateQuoteSettings(db, ania, gold, settings)).resolves.toEqual({ ok: true });
+    await expect(updateQuoteSettings(db, ania, ounce, settings)).resolves.toEqual({
+      ok: false,
+      reason: "goldNeedsPln",
+    });
+    await expect(getInstrument(db, ounce)).resolves.toMatchObject({ priceSource: "YAHOO" });
   });
 
   it("reports an unknown instrument", async () => {

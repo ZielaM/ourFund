@@ -98,9 +98,14 @@ export async function updateQuoteSettings(
   _actor: SessionUser,
   instrumentId: string,
   input: QuoteSettingsInput,
-): Promise<{ ok: true } | { ok: false; reason: "notFound" }> {
-  if (!(await getInstrument(db, instrumentId))) {
+): Promise<{ ok: true } | { ok: false; reason: "notFound" | "goldNeedsPln" }> {
+  const instrument = await getInstrument(db, instrumentId);
+  if (!instrument) {
     return { ok: false, reason: "notFound" };
+  }
+  // NBP publishes the price of gold in złoty only.
+  if (input.priceSource === "NBP_GOLD" && instrument.currency !== "PLN") {
+    return { ok: false, reason: "goldNeedsPln" };
   }
 
   await db.instrument.update({ where: { id: instrumentId }, data: input });

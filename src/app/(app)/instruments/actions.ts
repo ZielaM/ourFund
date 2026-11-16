@@ -96,7 +96,9 @@ export async function updateQuoteSettingsAction(
   const result = await updateQuoteSettings(getDb(), user, instrumentId, parsed.data);
 
   if (!result.ok) {
-    return formFailed("notFound");
+    return result.reason === "goldNeedsPln"
+      ? { status: "error", fieldErrors: { priceSource: "priceSource.goldNeedsPln" }, values }
+      : formFailed("notFound");
   }
 
   revalidatePath("/instruments", "layout");

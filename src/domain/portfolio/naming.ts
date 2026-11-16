@@ -5,7 +5,7 @@ import { LISTED_MARKETS } from "./markets";
 export const ACCOUNT_TYPES = ["STANDARD", "IKE", "IKZE", "OKI"] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
-export const INSTRUMENT_TYPES = ["STOCK", "ETF", "BOND", "CRYPTO", "INDEX"] as const;
+export const INSTRUMENT_TYPES = ["STOCK", "ETF", "BOND", "CRYPTO", "COMMODITY", "INDEX"] as const;
 export type InstrumentType = (typeof INSTRUMENT_TYPES)[number];
 
 /** An index cannot be bought or sold; it is only quoted, to serve as a benchmark. */
