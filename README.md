@@ -80,6 +80,10 @@ Ograniczenia: obsługiwane są instrumenty z GPW, USA, Xetry i Euronextu; operac
 
 Plik jest czytany na Twoim serwerze i nie jest nigdzie wysyłany ani przechowywany.
 
+## Limity wpłat na IKE i IKZE
+
+Pulpit pokazuje tegoroczny limit wpłat dla każdego rodzaju rachunku emerytalnego, który masz (IKE, IKZE), i ile z niego wykorzystano. Kwoty limitów są zapisane w aplikacji (lata 2019–2027) i trzeba je dopisać po ogłoszeniu limitu na kolejny rok. Wykorzystanie jest sumą wpłat zapisanych na rachunkach w danym roku: wypłata nie przywraca limitu, rachunki tego samego rodzaju mają wspólny limit, a transferu z innego IKE albo IKZE nie należy zapisywać jako wpłaty. Dla IKZE pokazany jest też wyższy limit dla prowadzących działalność gospodarczą.
+
 ## Podatki
 
 Zakładka „Podatki” przygotowuje dane do rocznego zeznania PIT-38 ze wszystkich portfeli użytkownika:

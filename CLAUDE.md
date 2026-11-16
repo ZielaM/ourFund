@@ -96,6 +96,10 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   (`src/domain/tax/losses.ts`): the report deducts the largest amount allowed, oldest loss
   first, and shows it as an assumption, because how much to deduct is the taxpayer's choice. Texts must not promise more than the code does: it is an aid,
   not tax advice.
+- Contribution limits (`src/domain/accounts/contribution-limits.ts`, shown on the dashboard):
+  the yearly IKE and IKZE limits are a table in the code, to be extended when a new year is
+  announced (a test checks them against the wage formula). Usage is the sum of `DEPOSIT`
+  transactions in PLN of the calendar year, per user and account type.
 - The dividends page (`src/domain/income/`, `/dividends`) is also per user and includes every
   account type. It shows net amounts converted at the NBP rate of the payment day, like the
   valuation, so its figures differ on purpose from the gross amounts of the tax report.

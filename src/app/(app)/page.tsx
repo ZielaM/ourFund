@@ -4,10 +4,12 @@ import { getTranslations } from "next-intl/server";
 import { ActionForm } from "@/components/form/action-form";
 import { TextField } from "@/components/form/fields";
 import { SubmitButton } from "@/components/form/submit-button";
+import { ContributionLimits } from "@/components/accounts/contribution-limits";
 import { PageTitle } from "@/components/layout/page-title";
 import { SignedMoney } from "@/components/portfolio/signed-money";
 import { Decimal } from "@/domain/decimal";
 import { formatDate, formatMoney } from "@/lib/format";
+import { getContributionLimits } from "@/server/accounts/contribution-limits";
 import { requireUser } from "@/server/auth/current-user";
 import { getDb } from "@/server/db/client";
 import { listPortfolios } from "@/server/portfolio/portfolios";
@@ -23,9 +25,10 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const db = getDb();
   const portfolios = await listPortfolios(db, user);
-  const valuations = await Promise.all(
-    portfolios.map((portfolio) => getPortfolioValuation(db, user, portfolio.id)),
-  );
+  const [limits, ...valuations] = await Promise.all([
+    getContributionLimits(db, user),
+    ...portfolios.map((portfolio) => getPortfolioValuation(db, user, portfolio.id)),
+  ]);
   const t = await getTranslations("dashboard");
 
   const totalValue = valuations.reduce(
@@ -101,6 +104,8 @@ export default async function DashboardPage() {
           </>
         )}
       </section>
+
+      <ContributionLimits limits={limits} />
 
       <section aria-labelledby="create-title" className="mt-12 flex max-w-sm flex-col gap-5">
         <h2 id="create-title" className="text-xl font-semibold">
