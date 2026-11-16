@@ -50,6 +50,7 @@ export default async function TaxesPage({ searchParams }: PageProps<"/taxes">) {
   const hasBonds = report !== null && report.savingsBonds.sales.length > 0;
   const hasCommodities = report !== null && report.commodities.sales.length > 0;
   const loss = report?.securities.income?.isNegative() ?? false;
+  const deducted = report?.securities.lossDeduction?.total.gt(0) ?? false;
 
   return (
     <>
@@ -107,9 +108,52 @@ export default async function TaxesPage({ searchParams }: PageProps<"/taxes">) {
                       label: loss ? t("securities.loss") : t("securities.income"),
                       value: report.securities.income?.abs() ?? null,
                     },
+                    ...(deducted
+                      ? [
+                          {
+                            label: t("securities.lossDeduction"),
+                            value: report.securities.lossDeduction?.total ?? null,
+                            part: true,
+                          },
+                          { label: t("securities.base"), value: report.securities.base },
+                        ]
+                      : []),
                     { label: t("securities.tax"), value: report.securities.tax, total: true },
                   ]}
-                />
+                >
+                  {deducted ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t("securities.lossDeductionNote", {
+                        years: report.securities
+                          .lossDeduction!.parts.map((part) =>
+                            t("securities.lossPart", {
+                              year: part.year,
+                              amount: formatMoney(part.amount, "PLN"),
+                            }),
+                          )
+                          .join(", "),
+                      })}
+                    </p>
+                  ) : null}
+                  {report.securities.lossDeduction === null && !loss ? (
+                    <p className="text-sm text-muted-foreground">{t("securities.lossUnknown")}</p>
+                  ) : null}
+                  {report.securities.lossesLeft.length > 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t("securities.lossesLeft", {
+                        years: report.securities.lossesLeft
+                          .map((left) =>
+                            t("securities.lossLeftPart", {
+                              year: left.year,
+                              amount: formatMoney(left.amount, "PLN"),
+                              until: left.year + 5,
+                            }),
+                          )
+                          .join(", "),
+                      })}
+                    </p>
+                  ) : null}
+                </Statement>
                 <SalesTable
                   sales={report.securities.sales}
                   year={year}

@@ -283,6 +283,81 @@ describe("computeTaxYears: sales of securities", () => {
   });
 });
 
+describe("computeTaxYears: losses of earlier years", () => {
+  // Bought for 1000 each, three positions sold in three years: -500, +300, +1000.
+  const entries = [
+    trade("BUY", "2023-01-10", "10", "100"),
+    trade("SELL", "2024-03-01", "10", "50"),
+    trade("BUY", "2024-04-01", "10", "100"),
+    trade("SELL", "2025-03-01", "10", "130"),
+    trade("BUY", "2025-04-01", "10", "100"),
+    trade("SELL", "2026-03-01", "10", "200"),
+  ];
+
+  it("carries a loss forward and deducts it from the income of later years", () => {
+    const years = report(entries);
+
+    const loss = years.get(2024)!.securities;
+    expect(fixed(loss.income)).toBe("-500.00");
+    expect(loss.lossDeduction?.total.toFixed()).toBe("0");
+    expect(loss.lossesLeft.map((left) => [left.year, left.amount.toFixed()])).toEqual([
+      [2024, "500"],
+    ]);
+    expect(fixed(loss.tax)).toBe("0.00");
+
+    // 300 of income is covered in full, which is more than half of the loss: once allowed.
+    const covered = years.get(2025)!.securities;
+    expect(covered.lossDeduction?.parts.map((p) => [p.year, p.amount.toFixed()])).toEqual([
+      [2024, "300"],
+    ]);
+    expect(fixed(covered.base)).toBe("0.00");
+    expect(fixed(covered.tax)).toBe("0.00");
+    expect(covered.lossesLeft.map((left) => left.amount.toFixed())).toEqual(["200"]);
+
+    // The remaining 200 is within half of the loss; 1000 - 200 = 800, 19% of which is 152.
+    const taxed = years.get(2026)!.securities;
+    expect(taxed.lossDeduction?.total.toFixed()).toBe("200");
+    expect(fixed(taxed.base)).toBe("800.00");
+    expect(fixed(taxed.tax)).toBe("152.00");
+    expect(taxed.lossesLeft).toEqual([]);
+  });
+
+  it("lets a loss expire after five years", () => {
+    const years = report(
+      [
+        trade("BUY", "2019-01-10", "10", "100"),
+        trade("SELL", "2020-03-01", "10", "50"),
+        trade("BUY", "2025-04-01", "10", "100"),
+        trade("SELL", "2026-03-01", "10", "200"),
+      ],
+      noRates,
+      2026,
+    );
+
+    // 2025 is the last year in which the loss of 2020 can be used.
+    expect(years.get(2024)!.securities.lossesLeft.map((left) => left.year)).toEqual([2020]);
+    expect(years.get(2025)!.securities.lossesLeft).toEqual([]);
+    // 2026 is the sixth year after 2020.
+    expect(years.get(2026)!.securities.lossDeduction?.total.toFixed()).toBe("0");
+    expect(fixed(years.get(2026)!.securities.tax)).toBe("190.00");
+  });
+
+  it("does not guess the deduction after a year whose result is unknown", () => {
+    const years = report([
+      trade("BUY", "2024-01-10", "1", "100", { instrumentId: "AAPL", currency: "USD" }),
+      trade("SELL", "2024-06-10", "1", "50", { instrumentId: "AAPL", currency: "USD" }),
+      trade("BUY", "2025-04-01", "10", "100"),
+      trade("SELL", "2026-03-01", "10", "200"),
+    ]);
+
+    expect(years.get(2024)!.securities.income).toBeNull();
+    const later = years.get(2026)!.securities;
+    expect(later.lossDeduction).toBeNull();
+    // Without a known deduction the tax is that of the whole income.
+    expect(fixed(later.tax)).toBe("190.00");
+  });
+});
+
 describe("computeTaxYears: retail treasury bonds", () => {
   it("keeps redemptions out of the return", () => {
     const year = report([

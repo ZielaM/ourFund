@@ -92,7 +92,9 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   than ten days counts as missing. Securities are matched FIFO per account; virtual currencies
   are not: every purchase is a cost of its year and uncovered costs carry forward. Retail
   treasury bonds and payments from Polish payers stay outside the return. Tax bases and taxes
-  are rounded to full złoty. Texts must not promise more than the code does: it is an aid,
+  are rounded to full złoty. Losses on securities carry forward five years
+  (`src/domain/tax/losses.ts`): the report deducts the largest amount allowed, oldest loss
+  first, and shows it as an assumption, because how much to deduct is the taxpayer's choice. Texts must not promise more than the code does: it is an aid,
   not tax advice.
 - The dividends page (`src/domain/income/`, `/dividends`) is also per user and includes every
   account type. It shows net amounts converted at the NBP rate of the payment day, like the

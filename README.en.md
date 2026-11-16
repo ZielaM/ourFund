@@ -86,12 +86,12 @@ The file is read on your server; it is not sent anywhere and not kept.
 
 The "Podatki" (Taxes) page prepares the figures of the yearly PIT-38 return from all portfolios of the user:
 
-- **Sales of securities**: revenue, costs and income, with cost matched FIFO separately on every account.
+- **Sales of securities**: revenue, costs and income, with cost matched FIFO separately on every account. A loss of the previous five years is deducted from the income, in the largest amount the law allows (up to half of a loss in one year, and once the whole of it up to 5 million zł), assuming the same was done in earlier years. The report knows only the losses that follow from transactions entered in the app.
 - **Dividends and interest from abroad**: 19% tax less the tax withheld abroad.
 - **Virtual currencies**: revenue, costs incurred in the year and costs carried over from earlier years.
 - IKE, IKZE and OKI accounts are left out. Dividends of Polish companies and redemptions of savings bonds, where the payer withholds the tax, are listed separately as amounts outside the return.
 
-Foreign amounts are converted at the NBP average rate of the last working day before the transaction; when the account paid in złoty, the amount in złoty at the broker's rate is used. The report takes the transaction date as entered, does not deduct losses of earlier years, and does not know treaty rates (it caps the deduction of foreign tax at 19% of each payment).
+Foreign amounts are converted at the NBP average rate of the last working day before the transaction; when the account paid in złoty, the amount in złoty at the broker's rate is used. The report takes the transaction date as entered, and does not know treaty rates (it caps the deduction of foreign tax at 19% of each payment).
 
 It is an aid for filling in the return, not tax advice. Compare the figures with the PIT-8C from your broker.
 
