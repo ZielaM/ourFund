@@ -82,6 +82,10 @@ Limits: instruments listed on GPW, in the US, on Xetra and on Euronext are suppo
 
 The file is read on your server; it is not sent anywhere and not kept.
 
+## Contribution limits of IKE and IKZE
+
+The dashboard shows this year's contribution limit for each kind of retirement account you have (IKE, IKZE) and how much of it is used. The limits are stored in the app (years 2019–2027) and a new year has to be added once it is announced. Usage is the sum of deposits recorded on the accounts in the year: a withdrawal gives nothing back, accounts of the same kind share one limit, and a transfer from another IKE or IKZE should not be recorded as a deposit. For IKZE the higher limit for the self-employed is shown as well.
+
 ## Taxes
 
 The "Podatki" (Taxes) page prepares the figures of the yearly PIT-38 return from all portfolios of the user:

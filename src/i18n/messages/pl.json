@@ -879,5 +879,19 @@
       "DIVIDEND": "dywidenda {symbol} z {date} na rachunku {account}"
     },
     "notice": "{count, plural, one {# dywidenda lub split do uzupełnienia} few {# dywidendy lub splity do uzupełnienia} other {# dywidend lub splitów do uzupełnienia}}"
+  },
+  "limits": {
+    "title": "Limity wpłat na IKE i IKZE w {year} roku",
+    "intro": "Liczone z wpłat zapisanych na rachunkach. Wypłata nie przywraca limitu, a transferu z innego rachunku tego samego rodzaju nie zapisuj jako wpłaty.",
+    "of": "z {limit}",
+    "meter": "Wykorzystanie limitu {type}",
+    "meterValue": "{percent}% limitu",
+    "remaining": "Do limitu zostało {amount}.",
+    "exceeded": "Limit przekroczony o {amount}.",
+    "selfEmployed": "Dla prowadzących działalność gospodarczą limit wynosi {limit}.",
+    "noDeposits": "Na tym rachunku nie ma zapisanych wpłat, więc wykorzystania limitu nie da się policzyć.",
+    "incomplete": "Wpłaty w innej walucie niż złoty nie zostały policzone.",
+    "accounts": "Limit jest jeden na osobę, więc sumowane są rachunki: {accounts}.",
+    "next": "Limit na {year} rok: {limit}."
   }
 }
