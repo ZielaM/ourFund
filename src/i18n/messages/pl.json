@@ -667,7 +667,13 @@
       "earlier": "Wyniki z poprzednich lat",
       "earlierHint": "Stratę możesz odliczyć w zeznaniu przez pięć kolejnych lat. Zestawienie jej nie odlicza.",
       "earlierCaption": "Wynik ze sprzedaży papierów wartościowych w poprzednich latach",
-      "year": "Rok"
+      "year": "Rok",
+      "lossDeduction": "Strata z lat ubiegłych",
+      "lossDeductionNote": "Odliczono największą kwotę, na jaką pozwalają przepisy: {years}. Założenie: w poprzednich latach też odliczano tyle, ile było można. W zeznaniu możesz odliczyć mniej.",
+      "lossPart": "{amount} ze straty z {year} r.",
+      "lossUnknown": "Nie udało się ustalić strat z lat ubiegłych, bo w jednym z nich brakuje kursu NBP. Podatek jest policzony bez odliczenia.",
+      "lossesLeft": "Do odliczenia w kolejnych latach zostaje: {years}.",
+      "lossLeftPart": "{amount} z {year} r. (najpóźniej w zeznaniu za {until} r.)"
     },
     "foreign": {
       "title": "Dywidendy i odsetki z zagranicy",

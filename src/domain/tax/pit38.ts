@@ -1,4 +1,11 @@
 import { Decimal } from "@/domain/decimal";
+import {
+  deductLosses,
+  isUsable,
+  LOSS_WINDOW_YEARS,
+  type LossDeduction,
+  type LossPool,
+} from "./losses";
 import { addDays } from "@/domain/market-data/nbp";
 import type { IsoDate } from "@/domain/portfolio/dates";
 import { computeLedger, type LedgerEntry, type TradeEntry } from "@/domain/portfolio/ledger";
@@ -95,7 +102,15 @@ export type TaxYear = {
     costs: Decimal | null;
     /** Negative for a loss. */
     income: Decimal | null;
-    /** Income rounded to full złoty; zero for a loss. */
+    /**
+     * The most that losses of the previous five years allow to deduct from this year's
+     * income, assuming the same was done in every earlier year. Null when a loss of one of
+     * those years could not be established (a missing NBP rate).
+     */
+    lossDeduction: LossDeduction | null;
+    /** Losses that can still be deducted in later years, after this year's deduction. */
+    lossesLeft: { year: number; amount: Decimal }[];
+    /** Income less the deducted losses, rounded to full złoty; zero for a loss. */
     base: Decimal | null;
     tax: Decimal | null;
     sales: SaleLine[];
@@ -368,6 +383,9 @@ export function computeTaxYears(
 
   const years: TaxYear[] = [];
   let carriedCosts: Decimal | null = ZERO;
+  let losses: LossPool[] = [];
+  // A year whose result is unknown may have been a loss: until it expires, so is the deduction.
+  let lossesUnknownThrough = Number.NEGATIVE_INFINITY;
 
   for (let year = firstYear; year <= lastYear; year += 1) {
     const draft = draftFor(year);
@@ -376,6 +394,27 @@ export function computeTaxYears(
     const revenue = sumOrNull(sales.map((line) => line.revenue));
     const costs = sumOrNull(sales.map((line) => line.costs));
     const income = difference(revenue, costs);
+
+    let lossDeduction: LossDeduction | null = null;
+    if (!income) {
+      lossesUnknownThrough = year + LOSS_WINDOW_YEARS;
+    } else if (year > lossesUnknownThrough) {
+      const result = deductLosses(losses, year, income);
+      lossDeduction = result.deduction;
+      losses = result.pools;
+    }
+    if (income?.lt(0)) {
+      losses.push({
+        year,
+        original: income.negated(),
+        remaining: income.negated(),
+        oneOffUsed: false,
+      });
+    }
+    const lossesLeft = losses
+      .filter((pool) => isUsable(pool, year + 1))
+      .map((pool) => ({ year: pool.year, amount: pool.remaining }));
+    const taxable = income && lossDeduction ? income.minus(lossDeduction.total) : income;
 
     const cryptoLines = byDate(draft.crypto);
     const cryptoRevenue = sumOrNull(cryptoLines.map((line) => line.revenue));
@@ -402,7 +441,15 @@ export function computeTaxYears(
 
     years.push({
       year,
-      securities: { revenue, costs, income, ...taxOn(income), sales },
+      securities: {
+        revenue,
+        costs,
+        income,
+        lossDeduction,
+        lossesLeft,
+        ...taxOn(taxable),
+        sales,
+      },
       crypto: {
         revenue: cryptoRevenue,
         costs: cryptoCosts,

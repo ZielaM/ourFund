@@ -179,8 +179,11 @@ test("zestawienie liczy sprzedaż metodą FIFO i pomija IKE", async () => {
   await expect(figure(securities, "Przychód")).toHaveText(/^1\s500,00\szł$/);
   await expect(figure(securities, "Koszty uzyskania przychodu")).toHaveText(/^1\s012,00\szł$/);
   await expect(figure(securities, "Dochód")).toHaveText(/^488,00\szł$/);
-  // 19% of 488 zł, rounded to full złoty.
-  await expect(figure(securities, "Podatek 19%")).toHaveText(/^93,00\szł$/);
+  // The loss of 100 zł made in 2025 is deducted first; 19% of 388 zł, rounded to full złoty.
+  await expect(figure(securities, "Strata z lat ubiegłych")).toHaveText(/^100,00\szł$/);
+  await expect(figure(securities, "Podstawa opodatkowania")).toHaveText(/^388,00\szł$/);
+  await expect(figure(securities, "Podatek 19%")).toHaveText(/^74,00\szł$/);
+  await expect(securities.getByText(/100,00\szł ze straty z 2025 r\./)).toBeVisible();
 
   const sales = page.getByRole("table", { name: "Sprzedaże papierów wartościowych w 2026 roku" });
   await expect(sales.getByRole("row")).toHaveCount(2);
@@ -209,6 +212,9 @@ test("rok podatkowy wybiera się z listy lat", async () => {
   const securities = section("Sprzedaż papierów wartościowych");
   await expect(figure(securities, "Strata")).toHaveText(/^100,00\szł$/);
   await expect(figure(securities, "Podatek 19%")).toHaveText(/^0,00\szł$/);
+  await expect(
+    securities.getByText(/zostaje: 100,00\szł z 2025 r\. \(najpóźniej w zeznaniu za 2030 r\.\)/),
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Wyniki z poprzednich lat" })).toHaveCount(0);
 });
 
@@ -247,7 +253,7 @@ test("zagraniczna dywidenda jest przeliczana po kursie NBP i dopłacana do 19%",
 
   // The sale of securities is settled separately and did not change.
   await expect(figure(section("Sprzedaż papierów wartościowych"), "Podatek 19%")).toHaveText(
-    /^93,00\szł$/,
+    /^74,00\szł$/,
   );
 });
 
