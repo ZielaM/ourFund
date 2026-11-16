@@ -10,6 +10,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
+  // The longest stories take about ten seconds alone and three times that next to the
+  // other files running in parallel; the default of 30 s left no margin.
+  timeout: 60_000,
   reporter: isCI
     ? [["github"], ["html", { open: "never" }]]
     : [["list"], ["html", { open: "never" }]],

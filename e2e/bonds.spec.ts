@@ -135,7 +135,7 @@ test("obligacja indeksowana jest szacunkiem, dopóki nie ma oprocentowania bież
   await openSeries(page, "EDO1135");
   await expect(page.getByText(/inflacja ogłoszona przez GUS plus marża/)).toBeVisible();
   await expect(
-    page.getByText("Nie wpisano jeszcze oprocentowania kolejnych okresów."),
+    page.getByText("Oprocentowanie kolejnych okresów nie jest jeszcze znane."),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Zapisz oprocentowanie" }).click();
@@ -144,7 +144,7 @@ test("obligacja indeksowana jest szacunkiem, dopóki nie ma oprocentowania bież
   await field(page, "Oprocentowanie (%)").fill("4,5");
   await page.getByRole("button", { name: "Zapisz oprocentowanie" }).click();
   await expect(page.getByText("Oprocentowanie zostało zapisane.")).toBeVisible();
-  const rates = page.getByRole("table", { name: "Wpisane oprocentowanie kolejnych okresów" });
+  const rates = page.getByRole("table", { name: "Oprocentowanie kolejnych okresów" });
   await expect(rates.getByRole("row", { name: /Okres 2/ })).toContainText("4,50%");
 
   await page.goto(portfolioUrl);
@@ -157,7 +157,7 @@ test("obligacja indeksowana jest szacunkiem, dopóki nie ma oprocentowania bież
   await openSeries(page, "EDO1135");
   await page.getByRole("button", { name: "Usuń oprocentowanie okresu 2" }).click();
   await expect(
-    page.getByText("Nie wpisano jeszcze oprocentowania kolejnych okresów."),
+    page.getByText("Oprocentowanie kolejnych okresów nie jest jeszcze znane."),
   ).toBeVisible();
   await page.goto(portfolioUrl);
   await expect(position).toContainText("szacunek");
