@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { isoDate, positive } from "@/domain/portfolio/transaction-input";
 
-export const PRICE_SOURCES = ["YAHOO", "MANUAL"] as const;
+/** Sources a user can choose; treasury bonds get theirs when the series is created. */
+export const PRICE_SOURCES = ["YAHOO", "NBP_GOLD", "MANUAL"] as const;
 export type PriceSource = (typeof PRICE_SOURCES)[number];
 
 /** Yahoo symbols such as "CDR.WA", "BRK-B", "BTC-USD" or "EURPLN=X". */

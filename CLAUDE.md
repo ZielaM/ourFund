@@ -49,6 +49,10 @@ The UI language is Polish; code, comments, commits and docs for contributors are
   provider, run `pnpm exec tsx scripts/check-market-data.mts` against the real services.
   stooq.pl is deliberately not used: it puts a browser check in front of automated clients.
 - Prices entered by hand (`source = MANUAL`) are never overwritten by a refresh.
+- `priceSource = NBP_GOLD` takes NBP's price of a gram of gold (PLN only) through
+  `providers.gold`; the refresh treats it like a quote without a symbol. Instruments of type
+  `COMMODITY` are physical holdings, not securities: the tax report lists their sales under
+  `commodities`, outside PIT-38.
 - Stored prices are **as traded**. Yahoo divides every close and dividend before a split by
   its ratio; `parseYahooChart` multiplies them back (`undoSplitAdjustment`), which is only
   right for a request that ends today. The refresh also stores dividends and splits

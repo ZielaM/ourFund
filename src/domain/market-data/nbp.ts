@@ -31,6 +31,29 @@ export function parseNbpRates(json: unknown): DailyRate[] | null {
   }));
 }
 
+const goldSchema = z.array(
+  z.object({ data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), cena: z.number().positive() }),
+);
+
+/** NBP has published the price of gold in this form since this day. */
+export const NBP_GOLD_SINCE: IsoDate = "2013-01-02";
+
+/**
+ * Reads NBP's prices of one gram of gold (fineness 1000), in PLN; null when the response
+ * is not such a list.
+ */
+export function parseNbpGold(json: unknown): { date: IsoDate; price: Decimal }[] | null {
+  const parsed = goldSchema.safeParse(json);
+  if (!parsed.success) {
+    return null;
+  }
+
+  return parsed.data.map(({ data, cena }) => ({
+    date: data,
+    price: new Decimal(cena).toDecimalPlaces(2),
+  }));
+}
+
 /** The NBP API accepts ranges of at most 367 days; longer periods are fetched in pieces. */
 export const NBP_MAX_RANGE_DAYS = 365;
 

@@ -60,6 +60,7 @@ const INSTRUMENTS: Record<string, TaxInstrument> = {
   AAPL: { currency: "USD", category: "security", foreign: true },
   BTC: { currency: "USD", category: "crypto", foreign: true },
   EDO: { currency: "PLN", category: "savingsBond", foreign: false },
+  GOLD: { currency: "PLN", category: "commodity", foreign: false },
 };
 const instrumentOf = (id: string) => INSTRUMENTS[id];
 
@@ -294,6 +295,30 @@ describe("computeTaxYears: retail treasury bonds", () => {
     expect(fixed(year.savingsBonds.income)).toBe("53.50");
     expect(year.savingsBonds.sales).toHaveLength(1);
     expect(year.empty).toBe(false);
+  });
+});
+
+describe("computeTaxYears: physical commodities", () => {
+  it("lists a sale of gold outside the return, with its result", () => {
+    const year = report([
+      trade("BUY", "2025-01-10", "10", "400", { instrumentId: "GOLD" }),
+      trade("SELL", "2026-03-10", "4", "500", { instrumentId: "GOLD" }),
+    ]).get(2026)!;
+
+    expect(year.securities.sales).toEqual([]);
+    expect(fixed(year.securities.income)).toBe("0.00");
+    expect(year.commodities.sales).toHaveLength(1);
+    expect(fixed(year.commodities.income)).toBe("400.00");
+    expect(year.empty).toBe(false);
+  });
+
+  it("is empty in a year without such sales", () => {
+    const year = report([trade("BUY", "2026-01-10", "10", "400", { instrumentId: "GOLD" })]).get(
+      2026,
+    )!;
+
+    expect(year.commodities).toMatchObject({ sales: [] });
+    expect(year.empty).toBe(true);
   });
 });
 

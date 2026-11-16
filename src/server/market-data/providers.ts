@@ -1,5 +1,12 @@
 import { REPOSITORY_URL } from "@/config/app";
-import { addDays, parseNbpRates, splitDateRange, type DailyRate } from "@/domain/market-data/nbp";
+import {
+  addDays,
+  NBP_GOLD_SINCE,
+  parseNbpGold,
+  parseNbpRates,
+  splitDateRange,
+  type DailyRate,
+} from "@/domain/market-data/nbp";
 import {
   closesInCurrency,
   currencyScale,
@@ -40,6 +47,8 @@ export type MarketDataProviders = {
   quotes(symbol: string, currency: string, from: IsoDate, to: IsoDate): Promise<QuoteResult>;
   /** PLN per one unit of `currency` for each day NBP published a rate. */
   rates(currency: string, from: IsoDate, to: IsoDate): Promise<RatesResult>;
+  /** NBP's price of one gram of gold in PLN for each day it was published. */
+  gold(from: IsoDate, to: IsoDate): Promise<QuoteResult>;
   /** GUS's yearly change of consumer prices for each published month of `year`. */
   inflation(year: number): Promise<InflationResult>;
   /** Every change of the NBP reference rate, oldest first. */
@@ -156,6 +165,29 @@ export function createLiveProviders(fetchFn: Fetch = fetch): MarketDataProviders
       return { ok: true, rates };
     },
 
+    async gold(from, to) {
+      const closes: DailyClose[] = [];
+      try {
+        const start = from < NBP_GOLD_SINCE ? NBP_GOLD_SINCE : from;
+        for (const range of start <= to ? splitDateRange(start, to) : []) {
+          const url = `https://api.nbp.pl/api/cenyzlota/${range.from}/${range.to}/?format=json`;
+          const { status, json } = await getJson(fetchFn, url);
+          // NBP answers 404 when no price was published in the range (e.g. a weekend).
+          if (status === 404) {
+            continue;
+          }
+          const parsed = status === 200 ? parseNbpGold(json) : null;
+          if (!parsed) {
+            return { ok: false, reason: "unavailable" };
+          }
+          closes.push(...parsed.map(({ date, price }) => ({ date, close: price })));
+        }
+      } catch {
+        return { ok: false, reason: "unavailable" };
+      }
+      return { ok: true, closes, dividends: [], splits: [] };
+    },
+
     async inflation(year) {
       try {
         for (const indicator of GUS_INFLATION_INDICATORS) {
@@ -208,6 +240,7 @@ const FIXTURE_EVENTS: Record<
   },
 };
 
+const FIXTURE_GOLD_PRICE = "500";
 const FIXTURE_RATES: Record<string, string> = { USD: "4", EUR: "4.3" };
 
 function weekdays(from: IsoDate, to: IsoDate): IsoDate[] {
@@ -248,6 +281,16 @@ export function createFixtureProviders(): MarketDataProviders {
     async rates(currency, from, to) {
       const rate = new Decimal(FIXTURE_RATES[currency] ?? "1");
       return { ok: true, rates: weekdays(from, to).map((date) => ({ date, rate })) };
+    },
+
+    async gold(from, to) {
+      const close = new Decimal(FIXTURE_GOLD_PRICE);
+      return {
+        ok: true,
+        closes: weekdays(from, to).map((date) => ({ date, close })),
+        dividends: [],
+        splits: [],
+      };
     },
 
     // No index data: bonds in end-to-end tests keep exactly the rates the tests enter.

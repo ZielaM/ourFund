@@ -48,6 +48,7 @@ export default async function TaxesPage({ searchParams }: PageProps<"/taxes">) {
     report !== null && (report.crypto.lines.length > 0 || !report.crypto.carriedCosts?.isZero());
   const hasDomestic = report !== null && report.domesticIncome.lines.length > 0;
   const hasBonds = report !== null && report.savingsBonds.sales.length > 0;
+  const hasCommodities = report !== null && report.commodities.sales.length > 0;
   const loss = report?.securities.income?.isNegative() ?? false;
 
   return (
@@ -226,6 +227,14 @@ export default async function TaxesPage({ searchParams }: PageProps<"/taxes">) {
                     <dt className="font-medium">{t("outside.bonds")}</dt>
                     <dd className="text-muted-foreground">
                       {t("outside.bondsBody", { income: money(report.savingsBonds.income) })}
+                    </dd>
+                  </div>
+                ) : null}
+                {hasCommodities ? (
+                  <div className="flex flex-col gap-1">
+                    <dt className="font-medium">{t("outside.commodities")}</dt>
+                    <dd className="text-muted-foreground">
+                      {t("outside.commoditiesBody", { income: money(report.commodities.income) })}
                     </dd>
                   </div>
                 ) : null}

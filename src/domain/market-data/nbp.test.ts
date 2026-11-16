@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, parseNbpRates, splitDateRange } from "./nbp";
+import { addDays, parseNbpGold, parseNbpRates, splitDateRange } from "./nbp";
 
 describe("parseNbpRates", () => {
   // Shape and values taken from a real response of api.nbp.pl.
@@ -36,6 +36,27 @@ describe("parseNbpRates", () => {
     ["nothing", undefined],
   ])("returns null for %s", (_reason, json) => {
     expect(parseNbpRates(json)).toBeNull();
+  });
+});
+
+describe("parseNbpGold", () => {
+  it("reads the price of a gram of gold for each published day", () => {
+    // Shape taken from a real response of api.nbp.pl/api/cenyzlota.
+    const response = [
+      { data: "2026-11-10", cena: 516.29 },
+      { data: "2026-11-12", cena: 513.76 },
+    ];
+
+    expect(parseNbpGold(response)?.map(({ date, price }) => [date, price.toFixed(2)])).toEqual([
+      ["2026-11-10", "516.29"],
+      ["2026-11-12", "513.76"],
+    ]);
+  });
+
+  it("returns null for anything else", () => {
+    expect(parseNbpGold({ rates: [] })).toBeNull();
+    expect(parseNbpGold([{ data: "10.11.2026", cena: 516.29 }])).toBeNull();
+    expect(parseNbpGold([{ data: "2026-11-10", cena: 0 }])).toBeNull();
   });
 });
 
